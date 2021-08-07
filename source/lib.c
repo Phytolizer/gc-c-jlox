@@ -6,11 +6,12 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sysexits.h>
 
 bool HadError;
 
-static void report(int line, const char* where, const char* message);
+static void report(size_t line, const char* where, const char* message);
 
 static void library_run(const char* text_begin, const char* text_end)
 {
@@ -51,10 +52,14 @@ int library_run_file(const char* filename)
   if (nread != (size_t)eofpos) {
     if (feof(fp)) {
       fprintf(stderr,
-              "EOF encountered early when reading file. Probably the file was "
+              "EOF encountered early when reading file. "
+              "Probably the file was "
               "modified during execution.\n");
     } else {
-      fprintf(stderr, "Error occurred while reading file (code %zu)\n", nread);
+      fprintf(stderr,
+              "Error occurred while reading file (code "
+              "%zu)\n",
+              nread);
     }
     fprintf(stderr, "  (file name: %s)\n", filename);
     fclose(fp);
@@ -91,20 +96,20 @@ int library_run_prompt()
       return EX_OSERR;
     }
 
-    library_run(line, line + len);
+    library_run(line, line + strlen(line));
 
     free(line);
   }
   return 0;
 }
 
-void library_error(int line, const char* message)
+void library_error(size_t line, const char* message)
 {
   report(line, "", message);
 }
 
-static void report(int line, const char* where, const char* message)
+static void report(size_t line, const char* where, const char* message)
 {
-  fprintf(stderr, "[line %d] Error%s: %s", line, where, message);
+  fprintf(stderr, "[line %zu] Error%s: %s\n", line, where, message);
   HadError = true;
 }

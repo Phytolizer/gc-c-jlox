@@ -1,9 +1,9 @@
 #include <gc.h>
+#include <lib.h>
 #include <private/scanner.h>
+#include <private/token.h>
 #include <stdbool.h>
 #include <string.h>
-
-#include "private/token.h"
 
 static bool scanner_is_at_end(struct scanner* self);
 static void scanner_scan_token(struct scanner* self);
@@ -32,10 +32,12 @@ struct token_list* scanner_scan_tokens(struct scanner* self)
   }
 
   token_list_push(self->tokens,
-                  (struct token) {.type = TOKEN_EOF,
-                                  .lexeme = "",
-                                  .literal = OBJECT_NULL(),
-                                  .line = self->line});
+                  (struct token) {
+                      .type = TOKEN_EOF,
+                      .lexeme = "",
+                      .literal = OBJECT_NULL(),
+                      .line = self->line,
+                  });
   return self->tokens;
 }
 
@@ -47,6 +49,7 @@ static bool scanner_is_at_end(struct scanner* self)
 static void scanner_scan_token(struct scanner* self)
 {
   char c = scanner_advance(self);
+  printf("%d\n", c);
   switch (c) {
     case '(':
       scanner_add_token(self, TOKEN_LEFT_PAREN, OBJECT_NULL());
@@ -77,6 +80,9 @@ static void scanner_scan_token(struct scanner* self)
       break;
     case '*':
       scanner_add_token(self, TOKEN_STAR, OBJECT_NULL());
+      break;
+    default:
+      library_error(self->line, "Unexpected character");
       break;
   }
 }
