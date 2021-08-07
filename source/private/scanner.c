@@ -12,6 +12,7 @@ static void scanner_add_token(struct scanner* self,
                               enum token_type type,
                               struct object value);
 static bool scanner_match(struct scanner* self, char expected);
+static char scanner_peek(struct scanner* self);
 
 struct scanner* scanner_new(const char* source_begin, const char* source_end)
 {
@@ -105,8 +106,24 @@ static void scanner_scan_token(struct scanner* self)
           scanner_match(self, '=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER,
           OBJECT_NULL());
       break;
+    case ' ':
+    case '\r':
+    case '\t':
+      break;
+    case '\n':
+      ++self->line;
+      break;
+    case '/':
+      if (scanner_match(self, '/')) {
+        while (scanner_peek(self) != '\n' && !scanner_is_at_end(self)) {
+          scanner_advance(self);
+        }
+      } else {
+        scanner_add_token(self, TOKEN_SLASH, OBJECT_NULL());
+      }
+      break;
     default:
-      library_error(self->line, "Unexpected character");
+      library_error(self->line, "Unexpected character.");
       break;
   }
 }
@@ -140,4 +157,13 @@ static bool scanner_match(struct scanner* self, char expected)
 
   ++self->current;
   return true;
+}
+
+static char scanner_peek(struct scanner* self)
+{
+  if (scanner_is_at_end(self)) {
+    return '\0';
+  }
+
+  return self->source_begin[self->current];
 }
