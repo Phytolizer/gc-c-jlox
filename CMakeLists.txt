@@ -27,6 +27,8 @@ add_library(
     source/private/token_type.c
     source/private/token.c
     source/private/scanner.c
+    source/private/hash/table.c
+    source/private/hash/fnv.c
 )
 
 target_include_directories(

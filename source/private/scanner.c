@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "private/hash/fnv.h"
+#include "private/hash/table.h"
+
 static bool scanner_is_at_end(struct scanner* self);
 static void scanner_scan_token(struct scanner* self);
 static char scanner_advance(struct scanner* self);
@@ -18,6 +21,12 @@ static char scanner_peek(struct scanner* self);
 static char scanner_peek_next(struct scanner* self);
 static void scanner_string(struct scanner* self);
 static void scanner_number(struct scanner* self);
+static bool is_alpha(char c);
+static bool is_alphanumeric(char c);
+static void scanner_identifier(struct scanner* self);
+static void init_keywords(void);
+
+static struct hash_table* Keywords = NULL;
 
 struct scanner* scanner_new(const char* source_begin, const char* source_end)
 {
@@ -133,6 +142,8 @@ static void scanner_scan_token(struct scanner* self)
     default:
       if (isdigit(c)) {
         scanner_number(self);
+      } else if (is_alpha(c)) {
+        scanner_identifier(self);
       } else {
         library_error(self->line, "Unexpected character.");
       }
@@ -229,4 +240,54 @@ static void scanner_number(struct scanner* self)
   strncpy(value, self->source_begin + self->start, self->current - self->start);
   double dval = strtod(value, NULL);
   scanner_add_token(self, TOKEN_NUMBER, OBJECT_NUMBER(dval));
+}
+
+static bool is_alpha(char c)
+{
+  return c == '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
+}
+
+static bool is_alphanumeric(char c)
+{
+  return isdigit(c) || is_alpha(c);
+}
+
+static void scanner_identifier(struct scanner* self)
+{
+  while (is_alphanumeric(scanner_peek(self))) {
+    scanner_advance(self);
+  }
+
+  if (Keywords == NULL) {
+    init_keywords();
+  }
+
+  enum token_type type = TOKEN_IDENTIFIER;
+  int* iptr = hash_table_try_get(
+      Keywords, self->source_begin + self->start, self->current - self->start);
+  if (iptr) {
+    type = *iptr;
+  }
+  scanner_add_token(self, type, OBJECT_NULL());
+}
+
+static void init_keywords(void)
+{
+  Keywords = hash_table_new(hash_fnv1a);
+  hash_table_insert(Keywords, "and", TOKEN_AND);
+  hash_table_insert(Keywords, "class", TOKEN_CLASS);
+  hash_table_insert(Keywords, "else", TOKEN_ELSE);
+  hash_table_insert(Keywords, "false", TOKEN_FALSE);
+  hash_table_insert(Keywords, "for", TOKEN_FOR);
+  hash_table_insert(Keywords, "fun", TOKEN_FUN);
+  hash_table_insert(Keywords, "if", TOKEN_IF);
+  hash_table_insert(Keywords, "nil", TOKEN_NIL);
+  hash_table_insert(Keywords, "or", TOKEN_OR);
+  hash_table_insert(Keywords, "print", TOKEN_PRINT);
+  hash_table_insert(Keywords, "return", TOKEN_RETURN);
+  hash_table_insert(Keywords, "super", TOKEN_SUPER);
+  hash_table_insert(Keywords, "this", TOKEN_THIS);
+  hash_table_insert(Keywords, "true", TOKEN_TRUE);
+  hash_table_insert(Keywords, "var", TOKEN_VAR);
+  hash_table_insert(Keywords, "while", TOKEN_WHILE);
 }
