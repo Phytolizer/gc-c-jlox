@@ -11,8 +11,8 @@ void object_fprint(FILE* f, struct object* obj)
     case OBJECT_TYPE_STRING:
       fprintf(f, "%s", OBJECT_AS_STRING(obj));
       break;
-    case OBJECT_TYPE_INT:
-      fprintf(f, "%d", OBJECT_AS_INT(obj));
+    case OBJECT_TYPE_NUMBER:
+      fprintf(f, "%lg", OBJECT_AS_NUMBER(obj));
       break;
     case OBJECT_TYPE_NULL:
       fprintf(f, "NULL");

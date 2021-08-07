@@ -1,8 +1,10 @@
+#include <ctype.h>
 #include <gc.h>
 #include <lib.h>
 #include <private/scanner.h>
 #include <private/token.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 static bool scanner_is_at_end(struct scanner* self);
@@ -13,6 +15,9 @@ static void scanner_add_token(struct scanner* self,
                               struct object value);
 static bool scanner_match(struct scanner* self, char expected);
 static char scanner_peek(struct scanner* self);
+static char scanner_peek_next(struct scanner* self);
+static void scanner_string(struct scanner* self);
+static void scanner_number(struct scanner* self);
 
 struct scanner* scanner_new(const char* source_begin, const char* source_end)
 {
@@ -122,8 +127,15 @@ static void scanner_scan_token(struct scanner* self)
         scanner_add_token(self, TOKEN_SLASH, OBJECT_NULL());
       }
       break;
+    case '"':
+      scanner_string(self);
+      break;
     default:
-      library_error(self->line, "Unexpected character.");
+      if (isdigit(c)) {
+        scanner_number(self);
+      } else {
+        library_error(self->line, "Unexpected character.");
+      }
       break;
   }
 }
@@ -166,4 +178,55 @@ static char scanner_peek(struct scanner* self)
   }
 
   return self->source_begin[self->current];
+}
+
+static char scanner_peek_next(struct scanner* self)
+{
+  if (self->current + 1 >= self->source_end - self->source_begin) {
+    return '\0';
+  }
+  return self->source_begin[self->current + 1];
+}
+
+static void scanner_string(struct scanner* self)
+{
+  while (scanner_peek(self) != '"' && !scanner_is_at_end(self)) {
+    if (scanner_peek(self) == '\n') {
+      ++self->line;
+    }
+    scanner_advance(self);
+  }
+
+  if (scanner_is_at_end(self)) {
+    library_error(self->line, "Unterminated string.");
+    return;
+  }
+
+  scanner_advance(self);
+
+  char* value = GC_MALLOC(self->current - self->start - 1);
+  strncpy(value,
+          self->source_begin + self->start + 1,
+          self->current - self->start - 2);
+  scanner_add_token(self, TOKEN_STRING, OBJECT_STRING(value));
+}
+
+static void scanner_number(struct scanner* self)
+{
+  while (isdigit(scanner_peek(self))) {
+    scanner_advance(self);
+  }
+
+  if (scanner_peek(self) == '.' && isdigit(scanner_peek_next(self))) {
+    scanner_advance(self);
+
+    while (isdigit(scanner_peek(self))) {
+      scanner_advance(self);
+    }
+  }
+
+  char* value = GC_MALLOC(self->current - self->start + 1);
+  strncpy(value, self->source_begin + self->start, self->current - self->start);
+  double dval = strtod(value, NULL);
+  scanner_add_token(self, TOKEN_NUMBER, OBJECT_NUMBER(dval));
 }
