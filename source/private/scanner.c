@@ -11,6 +11,7 @@ static char scanner_advance(struct scanner* self);
 static void scanner_add_token(struct scanner* self,
                               enum token_type type,
                               struct object value);
+static bool scanner_match(struct scanner* self, char expected);
 
 struct scanner* scanner_new(const char* source_begin, const char* source_end)
 {
@@ -49,7 +50,6 @@ static bool scanner_is_at_end(struct scanner* self)
 static void scanner_scan_token(struct scanner* self)
 {
   char c = scanner_advance(self);
-  printf("%d\n", c);
   switch (c) {
     case '(':
       scanner_add_token(self, TOKEN_LEFT_PAREN, OBJECT_NULL());
@@ -81,6 +81,30 @@ static void scanner_scan_token(struct scanner* self)
     case '*':
       scanner_add_token(self, TOKEN_STAR, OBJECT_NULL());
       break;
+    case '!':
+      scanner_add_token(
+          self,
+          scanner_match(self, '=') ? TOKEN_BANG_EQUAL : TOKEN_BANG,
+          OBJECT_NULL());
+      break;
+    case '=':
+      scanner_add_token(
+          self,
+          scanner_match(self, '=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL,
+          OBJECT_NULL());
+      break;
+    case '<':
+      scanner_add_token(
+          self,
+          scanner_match(self, '=') ? TOKEN_LESS_EQUAL : TOKEN_LESS,
+          OBJECT_NULL());
+      break;
+    case '>':
+      scanner_add_token(
+          self,
+          scanner_match(self, '=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER,
+          OBJECT_NULL());
+      break;
     default:
       library_error(self->line, "Unexpected character");
       break;
@@ -105,4 +129,15 @@ static void scanner_add_token(struct scanner* self,
                       .literal = value,
                       .line = self->line,
                   });
+}
+
+static bool scanner_match(struct scanner* self, char expected)
+{
+  if (scanner_is_at_end(self) || self->source_begin[self->current] != expected)
+  {
+    return false;
+  }
+
+  ++self->current;
+  return true;
 }
