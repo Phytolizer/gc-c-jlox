@@ -1,6 +1,8 @@
 #include <assert.h>
+#include <errno.h>
 #include <gc.h>
 #include <lib.h>
+#include <private/scanner.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,13 +12,13 @@ bool HadError;
 
 static void report(int line, const char* where, const char* message);
 
-static int library_run(const char* text_begin, const char* text_end)
+static void library_run(const char* text_begin, const char* text_end)
 {
-  Scanner* scanner = new_scanner(text_begin, text_end);
-  TokenList* tokens = scanner_scan_tokens(scanner);
+  struct scanner* scanner = scanner_new(text_begin, text_end);
+  struct token_list* tokens = scanner_scan_tokens(scanner);
 
   for (int i = 0; i < tokens->length; ++i) {
-    token_print(tokens->data[i]);
+    token_print(&tokens->data[i]);
     printf("\n");
   }
 }
@@ -34,7 +36,6 @@ int library_run_file(const char* filename)
     assert(errno != EINVAL);
     assert(errno != ESPIPE);
     fclose(fp);
-    return EX_OSERR;
   }
 
   rewind(fp);
@@ -66,6 +67,33 @@ int library_run_file(const char* filename)
 
   if (HadError) {
     return EX_DATAERR;
+  }
+  return 0;
+}
+
+int library_run_prompt()
+{
+  while (true) {
+    printf("> ");
+    fflush(stdout);
+    char* line = NULL;
+    size_t len;
+    ssize_t ret = getline(&line, &len, stdin);
+    if (ret == -1) {
+      assert(errno != EINVAL);
+      if (errno == 0) {
+        printf("\n");
+        free(line);
+        break;
+      }
+      fprintf(stderr, "Couldn't allocate enough memory for line input.\n");
+      free(line);
+      return EX_OSERR;
+    }
+
+    library_run(line, line + len);
+
+    free(line);
   }
   return 0;
 }

@@ -23,6 +23,10 @@ add_subdirectory("${FOLDER_gc}")
 add_library(
     gc-c-jlox_lib OBJECT
     source/lib.c
+    source/private/object.c
+    source/private/token_type.c
+    source/private/token.c
+    source/private/scanner.c
 )
 
 target_include_directories(
