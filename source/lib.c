@@ -1,9 +1,25 @@
 #include <assert.h>
 #include <gc.h>
 #include <lib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sysexits.h>
+
+bool HadError;
+
+static void report(int line, const char* where, const char* message);
+
+static int library_run(const char* text_begin, const char* text_end)
+{
+  Scanner* scanner = new_scanner(text_begin, text_end);
+  TokenList* tokens = scanner_scan_tokens(scanner);
+
+  for (int i = 0; i < tokens->length; ++i) {
+    token_print(tokens->data[i]);
+    printf("\n");
+  }
+}
 
 int library_run_file(const char* filename)
 {
@@ -44,6 +60,23 @@ int library_run_file(const char* filename)
     return EX_OSERR;
   }
 
+  fclose(fp);
   contents[eofpos] = '\0';
   library_run(contents, contents + eofpos);
+
+  if (HadError) {
+    return EX_DATAERR;
+  }
+  return 0;
+}
+
+void library_error(int line, const char* message)
+{
+  report(line, "", message);
+}
+
+static void report(int line, const char* where, const char* message)
+{
+  fprintf(stderr, "[line %d] Error%s: %s", line, where, message);
+  HadError = true;
 }
