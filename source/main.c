@@ -1,8 +1,8 @@
+#include <gc.h>
 #include <lib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sysexits.h>
-#include <gc.h>
 
 int main(int argc, const char* argv[])
 {
