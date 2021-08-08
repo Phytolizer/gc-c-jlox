@@ -109,6 +109,9 @@ static struct expr* parse_term(struct parser* parser)
 static struct expr* parse_factor(struct parser* parser)
 {
   struct expr* expr = parse_unary(parser);
+  if (!expr) {
+    return NULL;
+  }
 
   while (parser_match(parser, 2, TOKEN_SLASH, TOKEN_STAR)) {
     struct token op = *parser_previous(parser);
@@ -127,6 +130,9 @@ static struct expr* parse_unary(struct parser* parser)
   if (parser_match(parser, 2, TOKEN_BANG, TOKEN_MINUS)) {
     struct token op = *parser_previous(parser);
     struct expr* right = parse_unary(parser);
+    if (!right) {
+      return NULL;
+    }
     return (struct expr*)expr_new_unary(op, right);
   }
 

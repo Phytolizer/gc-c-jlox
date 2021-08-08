@@ -36,8 +36,9 @@ int library_run_file(const char* filename)
     return EX_NOINPUT;
   }
 
-  int eofpos = fseek(fp, 0, SEEK_END);
-  if (eofpos == -1) {
+  int seekret = fseek(fp, 0, SEEK_END);
+  long eofpos = ftell(fp);
+  if (seekret == -1 || eofpos == -1) {
     // this will ALWAYS crash, as the args are valid
     assert(errno != EINVAL);
     assert(errno != ESPIPE);
