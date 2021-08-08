@@ -23,6 +23,7 @@ add_subdirectory("${FOLDER_gc}")
 add_library(
     gc-c-jlox_lib OBJECT
     source/lib.c
+    source/private/interpreter.c
     source/private/object.c
     source/private/parser.c
     source/private/scanner.c

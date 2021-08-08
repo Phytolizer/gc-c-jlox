@@ -4,6 +4,7 @@
 #include <lib.h>
 #include <private/ast/expr.h>
 #include <private/ast/printer.h>
+#include <private/interpreter.h>
 #include <private/parser.h>
 #include <private/scanner.h>
 #include <private/strutils.h>
@@ -14,20 +15,25 @@
 #include <string.h>
 #include <sysexits.h>
 
-bool HadError;
+bool HadError = false;
+bool HadRuntimeError = false;
+static struct interpreter* interpreter = NULL;
 
 static void report(size_t line, const char* where, const char* message);
 
 static void library_run(const char* text_begin, const char* text_end)
 {
+  if (!interpreter) {
+    interpreter = GC_MALLOC(sizeof(struct interpreter));
+  }
   struct scanner* scanner = scanner_new(text_begin, text_end);
   struct token_list* tokens = scanner_scan_tokens(scanner);
   struct parser* parser = parser_new(tokens);
   struct expr* expression = parser_parse(parser);
-  if (expression) {
-    struct ast_printer printer;
-    printf("%s\n", expr_accept_ast_printer(expression, &printer));
+  if (HadError) {
+    return;
   }
+  interpret(interpreter, expression);
 }
 
 int library_run_file(const char* filename)
@@ -80,6 +86,9 @@ int library_run_file(const char* filename)
   if (HadError) {
     return EX_DATAERR;
   }
+  if (HadRuntimeError) {
+    return EX_SOFTWARE;
+  }
   return 0;
 }
 
@@ -105,6 +114,9 @@ int library_run_prompt()
 
     library_run(line, line + strlen(line));
 
+    HadError = false;
+    HadRuntimeError = false;
+
     free(line);
   }
   return 0;
@@ -123,6 +135,12 @@ void library_error_at_token(struct token* token, const char* message)
     char* where = alloc_printf(" at '%s'", token->lexeme);
     report(token->line, where, message);
   }
+}
+
+void library_runtime_error(struct runtime_error* err)
+{
+  fprintf(stderr, "%s\n[line %zu]\n", err->message, err->token->line);
+  HadRuntimeError = true;
 }
 
 static void report(size_t line, const char* where, const char* message)
