@@ -5,6 +5,12 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+#include "private/ast/stmt.h"
+
+static struct stmt* parse_statement(struct parser* parser);
+static struct stmt* parse_print_statement(struct parser* parser);
+static struct stmt* parse_expression_statement(struct parser* parser);
+
 static struct expr* parse_expression(struct parser* parser);
 static struct expr* parse_equality(struct parser* parser);
 static struct expr* parse_comparison(struct parser* parser);
@@ -33,9 +39,51 @@ struct parser* parser_new(struct token_list* tokens)
   return parser;
 }
 
-struct expr* parser_parse(struct parser* parser)
+struct stmt_list* parser_parse(struct parser* parser)
 {
-  return parse_expression(parser);
+  struct stmt_list* statements = stmt_list_new();
+  while (!parser_is_at_end(parser)) {
+    struct stmt* statement = parse_statement(parser);
+    if (statement) {
+      stmt_list_push(statements, statement);
+    }
+  }
+
+  return statements;
+}
+
+static struct stmt* parse_statement(struct parser* parser)
+{
+  if (parser_match(parser, 1, TOKEN_PRINT)) {
+    return parse_print_statement(parser);
+  }
+
+  return parse_expression_statement(parser);
+}
+
+static struct stmt* parse_print_statement(struct parser* parser)
+{
+  struct expr* value = parse_expression(parser);
+  if (!value) {
+    return NULL;
+  }
+  if (!parser_consume(parser, TOKEN_SEMICOLON, "Expect ';' after value.")) {
+    return NULL;
+  }
+  return (struct stmt*)stmt_new_print(value);
+}
+
+static struct stmt* parse_expression_statement(struct parser* parser)
+{
+  struct expr* expr = parse_expression(parser);
+  if (!expr) {
+    return NULL;
+  }
+  if (!parser_consume(parser, TOKEN_SEMICOLON, "Expect ';' after expression."))
+  {
+    return NULL;
+  }
+  return (struct stmt*)stmt_new_expression(expr);
 }
 
 static struct expr* parse_expression(struct parser* parser)

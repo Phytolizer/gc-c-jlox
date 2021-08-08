@@ -29,11 +29,11 @@ static void library_run(const char* text_begin, const char* text_end)
   struct scanner* scanner = scanner_new(text_begin, text_end);
   struct token_list* tokens = scanner_scan_tokens(scanner);
   struct parser* parser = parser_new(tokens);
-  struct expr* expression = parser_parse(parser);
+  struct stmt_list* statements = parser_parse(parser);
   if (HadError) {
     return;
   }
-  interpret(interpreter, expression);
+  interpret(interpreter, statements);
 }
 
 int library_run_file(const char* filename)

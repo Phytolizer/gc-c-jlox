@@ -30,8 +30,11 @@ add_library(
     source/private/strutils.c
     source/private/token.c
     source/private/token_type.c
+    source/private/ast/debug.c
     source/private/ast/expr.c
     source/private/ast/printer.c
+    source/private/ast/stmt.c
+    source/private/ast/stmt_list.c
     source/private/hash/fnv.c
     source/private/hash/table.c
 )

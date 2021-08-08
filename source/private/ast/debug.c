@@ -79,3 +79,35 @@ void expr_debug(struct expr* expr)
     }
   }
 }
+
+void stmt_debug(struct stmt* stmt)
+{
+  switch (stmt->type) {
+    case STMT_EXPRESSION: {
+      struct expression_stmt* expression = (struct expression_stmt*)stmt;
+      printf("EXPRESSION_STMT {\n");
+      ++AstDebugIndentLevel;
+      ast_debug_print_indent();
+      printf(".expression = ");
+      expr_debug(expression->expression);
+      printf(",\n");
+      --AstDebugIndentLevel;
+      ast_debug_print_indent();
+      printf("}");
+      break;
+    }
+    case STMT_PRINT: {
+      struct print_stmt* print = (struct print_stmt*)stmt;
+      printf("PRINT_STMT {\n");
+      ++AstDebugIndentLevel;
+      ast_debug_print_indent();
+      printf(".expression = ");
+      expr_debug(print->expression);
+      printf(",\n");
+      --AstDebugIndentLevel;
+      ast_debug_print_indent();
+      printf("}");
+      break;
+    }
+  }
+}

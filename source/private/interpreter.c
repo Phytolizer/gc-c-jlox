@@ -61,7 +61,16 @@ static struct interpret_result interpreter_visit_literal_expr(
 static struct interpret_result interpreter_visit_unary_expr(
     struct interpreter* interpreter, struct unary_expr* expr);
 
+static struct runtime_error* interpreter_visit_print_stmt(
+    struct interpreter* interpreter, struct stmt* stmt);
+static struct runtime_error* interpreter_visit_expression_stmt(
+    struct interpreter* interpreter, struct stmt* stmt);
+
+struct runtime_error* interpreter_execute(struct interpreter* interpreter,
+                                          struct stmt* stmt);
+
 EXPR_DEFINE_ACCEPT_FOR(struct interpret_result, interpreter);
+STMT_DEFINE_ACCEPT_FOR(struct runtime_error*, interpreter);
 
 static struct runtime_error* runtime_error_new(struct token* token,
                                                const char* message)
@@ -261,13 +270,44 @@ static struct interpret_result interpreter_visit_unary_expr(
   }
 }
 
-void interpret(struct interpreter* interpreter, struct expr* expression)
+static struct runtime_error* interpreter_visit_print_stmt(
+    struct interpreter* interpreter, struct stmt* stmt)
 {
-  struct interpret_result result = evaluate(interpreter, expression);
+  struct print_stmt* print_stmt = (struct print_stmt*)stmt;
+  struct interpret_result result =
+      evaluate(interpreter, print_stmt->expression);
   if (result.type == INTERPRET_RESULT_ERROR) {
-    library_runtime_error(result.u.err);
-  } else {
-    struct object value = result.u.ok;
-    printf("%s\n", stringify(&value));
+    return result.u.err;
   }
+  printf("%s\n", stringify(&result.u.ok));
+  return NULL;
+}
+static struct runtime_error* interpreter_visit_expression_stmt(
+    struct interpreter* interpreter, struct stmt* stmt)
+{
+  struct expression_stmt* expression_stmt = (struct expression_stmt*)stmt;
+  struct interpret_result result =
+      evaluate(interpreter, expression_stmt->expression);
+  if (result.type == INTERPRET_RESULT_ERROR) {
+    return result.u.err;
+  }
+  return NULL;
+}
+
+void interpret(struct interpreter* interpreter, struct stmt_list* statements)
+{
+  for (size_t i = 0; i < statements->length; ++i) {
+    struct runtime_error* result =
+        interpreter_execute(interpreter, statements->data[i]);
+    if (result) {
+      library_runtime_error(result);
+      break;
+    }
+  }
+}
+
+struct runtime_error* interpreter_execute(struct interpreter* interpreter,
+                                          struct stmt* stmt)
+{
+  return stmt_accept_interpreter(stmt, interpreter);
 }

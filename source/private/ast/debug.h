@@ -8,3 +8,4 @@ extern size_t AstDebugIndentLevel;
 
 void ast_debug_print_indent(void);
 void expr_debug(struct expr* expr);
+void stmt_debug(struct stmt* stmt);

@@ -2,6 +2,7 @@
 
 #include <private/ast/expr.h>
 #include <private/ast/stmt.h>
+#include <private/ast/stmt_list.h>
 #include <private/token.h>
 
 struct parser {
@@ -10,4 +11,4 @@ struct parser {
 };
 
 struct parser* parser_new(struct token_list* tokens);
-struct expr* parser_parse(struct parser* parser);
+struct stmt_list* parser_parse(struct parser* parser);

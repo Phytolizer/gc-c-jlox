@@ -1,11 +1,18 @@
+#include <gc.h>
 #include <private/ast/stmt.h>
 
-void stmt_print(struct stmt* stmt)
+struct expression_stmt* stmt_new_expression(struct expr* expression)
 {
-  switch (stmt->type) {
-    case STMT_EXPRESSION:
-    break;
-    case STMT_PRINT:
-    break;
-  }
+  struct expression_stmt* stmt = GC_MALLOC(sizeof(struct expression_stmt));
+  stmt->base.type = STMT_EXPRESSION;
+  stmt->expression = expression;
+  return stmt;
+}
+
+struct print_stmt* stmt_new_print(struct expr* expression)
+{
+  struct print_stmt* stmt = GC_MALLOC(sizeof(struct print_stmt));
+  stmt->base.type = STMT_PRINT;
+  stmt->expression = expression;
+  return stmt;
 }
