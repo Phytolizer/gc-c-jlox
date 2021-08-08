@@ -3,6 +3,7 @@
 #include <gc.h>
 #include <lib.h>
 #include <private/ast/expr.h>
+#include <private/ast/printer.h>
 #include <private/parser.h>
 #include <private/scanner.h>
 #include <private/strutils.h>
@@ -24,8 +25,8 @@ static void library_run(const char* text_begin, const char* text_end)
   struct parser* parser = parser_new(tokens);
   struct expr* expression = parser_parse(parser);
   if (expression) {
-    expr_print(expression);
-    printf("\n");
+    struct ast_printer printer;
+    printf("%s\n", expr_accept_ast_printer(expression, &printer));
   }
 }
 
