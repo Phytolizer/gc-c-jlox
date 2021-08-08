@@ -16,8 +16,9 @@ struct token_list {
   size_t capacity;
 };
 
-void token_print(struct token* tok);
-void token_fprint(FILE* f, struct token* tok);
+size_t token_print(const struct token* tok);
+size_t token_fprint(FILE* f, const struct token* tok);
+size_t token_snprint(char* s, size_t n, const struct token* tok);
 
 struct token_list* token_list_new(void);
 void token_list_push(struct token_list* list, struct token tok);

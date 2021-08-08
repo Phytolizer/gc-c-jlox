@@ -29,7 +29,6 @@ void hash_table_insert(struct hash_table* table,
                        int value)
 {
   if (table->len == 0 || (double)table->len / (double)table->cap > MAX_LOAD) {
-    printf("len = %zu, rehashing.\n", table->len);
     rehash(table);
   }
   insert_raw(table->data,
@@ -38,7 +37,6 @@ void hash_table_insert(struct hash_table* table,
              GC_STRDUP(key_begin),
              value);
   ++table->len;
-  dump_table(table);
 }
 
 bool hash_table_contains(struct hash_table* table,

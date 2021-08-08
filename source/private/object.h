@@ -48,5 +48,6 @@ struct object {
 #define OBJECT_AS_NUMBER(obj) (obj)->value.num
 #define OBJECT_AS_STRING(obj) (obj)->value.s
 
-void object_print(struct object* obj);
-void object_fprint(FILE* f, struct object* obj);
+size_t object_print(const struct object* obj);
+size_t object_fprint(FILE* f, const struct object* obj);
+size_t object_snprint(char* s, size_t n, const struct object* obj);
