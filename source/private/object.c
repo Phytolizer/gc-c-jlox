@@ -10,6 +10,9 @@
         return prefix##nprintf((p), (n), "%s", OBJECT_AS_STRING(obj)); \
       case OBJECT_TYPE_NUMBER: \
         return prefix##nprintf((p), (n), "%lg", OBJECT_AS_NUMBER(obj)); \
+      case OBJECT_TYPE_BOOL: \
+        return prefix##nprintf( \
+            (p), (n), "%s", OBJECT_AS_BOOL(obj) ? "true" : "false"); \
       case OBJECT_TYPE_NULL: \
         return prefix##nprintf((p), (n), "NULL"); \
     } \

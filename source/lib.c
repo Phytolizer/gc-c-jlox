@@ -2,7 +2,11 @@
 #include <errno.h>
 #include <gc.h>
 #include <lib.h>
+#include <private/ast/expr.h>
+#include <private/parser.h>
 #include <private/scanner.h>
+#include <private/strutils.h>
+#include <private/token.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,9 +21,10 @@ static void library_run(const char* text_begin, const char* text_end)
 {
   struct scanner* scanner = scanner_new(text_begin, text_end);
   struct token_list* tokens = scanner_scan_tokens(scanner);
-
-  for (int i = 0; i < tokens->length; ++i) {
-    token_print(&tokens->data[i]);
+  struct parser* parser = parser_new(tokens);
+  struct expr* expression = parser_parse(parser);
+  if (expression) {
+    expr_print(expression);
     printf("\n");
   }
 }
@@ -106,6 +111,16 @@ int library_run_prompt()
 void library_error(size_t line, const char* message)
 {
   report(line, "", message);
+}
+
+void library_error_at_token(struct token* token, const char* message)
+{
+  if (token->type == TOKEN_EOF) {
+    report(token->line, " at end", message);
+  } else {
+    char* where = alloc_printf(" at '%s'", token->lexeme);
+    report(token->line, where, message);
+  }
 }
 
 static void report(size_t line, const char* where, const char* message)

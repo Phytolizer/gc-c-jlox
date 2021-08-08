@@ -24,10 +24,11 @@ add_library(
     gc-c-jlox_lib OBJECT
     source/lib.c
     source/private/object.c
-    source/private/token_type.c
-    source/private/token.c
+    source/private/parser.c
     source/private/scanner.c
     source/private/strutils.c
+    source/private/token.c
+    source/private/token_type.c
     source/private/ast/expr.c
     source/private/ast/printer.c
     source/private/hash/fnv.c

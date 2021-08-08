@@ -49,7 +49,6 @@ void expr_print(struct expr* expr)
   switch (expr->type) {
     case EXPR_BINARY: {
       struct binary_expr* binary = (struct binary_expr*)expr;
-      print_indent();
       printf("BINARY_EXPR {\n");
       ++IndentLevel;
       print_indent();
@@ -71,7 +70,6 @@ void expr_print(struct expr* expr)
     }
     case EXPR_GROUPING: {
       struct grouping_expr* grouping = (struct grouping_expr*)expr;
-      print_indent();
       printf("GROUPING_EXPR {\n");
       ++IndentLevel;
       print_indent();
@@ -85,7 +83,6 @@ void expr_print(struct expr* expr)
     }
     case EXPR_LITERAL: {
       struct literal_expr* literal = (struct literal_expr*)expr;
-      print_indent();
       printf("LITERAL_EXPR {\n");
       ++IndentLevel;
       print_indent();
@@ -99,7 +96,6 @@ void expr_print(struct expr* expr)
     }
     case EXPR_UNARY: {
       struct unary_expr* unary = (struct unary_expr*)expr;
-      print_indent();
       printf("UNARY_EXPR {\n");
       ++IndentLevel;
       print_indent();
