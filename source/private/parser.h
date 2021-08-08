@@ -1,6 +1,7 @@
 #pragma once
 
 #include <private/ast/expr.h>
+#include <private/ast/stmt.h>
 #include <private/token.h>
 
 struct parser {

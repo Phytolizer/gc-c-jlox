@@ -6,7 +6,7 @@
 
 struct hash_bucket {
   char* key;
-  int value;
+  void* value;
 };
 
 typedef uint64_t (*hash_function)(const void* data, size_t len);
@@ -19,6 +19,12 @@ struct hash_table {
 };
 
 struct hash_table* hash_table_new(hash_function function);
-void hash_table_insert(struct hash_table* table, const char* key_begin, int value);
-bool hash_table_contains(struct hash_table* table, const char* key_begin, size_t key_len);
-int* hash_table_try_get(struct hash_table* table, const char* key_begin, size_t key_len);
+void hash_table_insert(struct hash_table* table,
+                       const char* key_begin,
+                       void* value);
+bool hash_table_contains(struct hash_table* table,
+                         const char* key_begin,
+                         size_t key_len);
+void** hash_table_try_get(struct hash_table* table,
+                          const char* key_begin,
+                          size_t key_len);

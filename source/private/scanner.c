@@ -244,7 +244,7 @@ static void scanner_number(struct scanner* self)
 
 static bool is_alpha(char c)
 {
-  return c == '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
+  return c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
 static bool is_alphanumeric(char c)
@@ -263,31 +263,38 @@ static void scanner_identifier(struct scanner* self)
   }
 
   enum token_type type = TOKEN_IDENTIFIER;
-  int* iptr = hash_table_try_get(
+  void** iptr = hash_table_try_get(
       Keywords, self->source_begin + self->start, self->current - self->start);
   if (iptr) {
-    type = *iptr;
+    type = *(enum token_type*)(*iptr);
   }
   scanner_add_token(self, type, OBJECT_NULL());
+}
+
+static enum token_type* newtt(enum token_type type)
+{
+  enum token_type* result = GC_MALLOC(sizeof(enum token_type));
+  *result = type;
+  return result;
 }
 
 static void init_keywords(void)
 {
   Keywords = hash_table_new(hash_fnv1a);
-  hash_table_insert(Keywords, "and", TOKEN_AND);
-  hash_table_insert(Keywords, "class", TOKEN_CLASS);
-  hash_table_insert(Keywords, "else", TOKEN_ELSE);
-  hash_table_insert(Keywords, "false", TOKEN_FALSE);
-  hash_table_insert(Keywords, "for", TOKEN_FOR);
-  hash_table_insert(Keywords, "fun", TOKEN_FUN);
-  hash_table_insert(Keywords, "if", TOKEN_IF);
-  hash_table_insert(Keywords, "nil", TOKEN_NIL);
-  hash_table_insert(Keywords, "or", TOKEN_OR);
-  hash_table_insert(Keywords, "print", TOKEN_PRINT);
-  hash_table_insert(Keywords, "return", TOKEN_RETURN);
-  hash_table_insert(Keywords, "super", TOKEN_SUPER);
-  hash_table_insert(Keywords, "this", TOKEN_THIS);
-  hash_table_insert(Keywords, "true", TOKEN_TRUE);
-  hash_table_insert(Keywords, "var", TOKEN_VAR);
-  hash_table_insert(Keywords, "while", TOKEN_WHILE);
+  hash_table_insert(Keywords, "and", newtt(TOKEN_AND));
+  hash_table_insert(Keywords, "class", newtt(TOKEN_CLASS));
+  hash_table_insert(Keywords, "else", newtt(TOKEN_ELSE));
+  hash_table_insert(Keywords, "false", newtt(TOKEN_FALSE));
+  hash_table_insert(Keywords, "for", newtt(TOKEN_FOR));
+  hash_table_insert(Keywords, "fun", newtt(TOKEN_FUN));
+  hash_table_insert(Keywords, "if", newtt(TOKEN_IF));
+  hash_table_insert(Keywords, "nil", newtt(TOKEN_NIL));
+  hash_table_insert(Keywords, "or", newtt(TOKEN_OR));
+  hash_table_insert(Keywords, "print", newtt(TOKEN_PRINT));
+  hash_table_insert(Keywords, "return", newtt(TOKEN_RETURN));
+  hash_table_insert(Keywords, "super", newtt(TOKEN_SUPER));
+  hash_table_insert(Keywords, "this", newtt(TOKEN_THIS));
+  hash_table_insert(Keywords, "true", newtt(TOKEN_TRUE));
+  hash_table_insert(Keywords, "var", newtt(TOKEN_VAR));
+  hash_table_insert(Keywords, "while", newtt(TOKEN_WHILE));
 }
