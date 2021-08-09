@@ -251,7 +251,7 @@ static struct expr* parse_primary(struct parser* parser)
 
   if (parser_match(parser, 1, TOKEN_LEFT_PAREN)) {
     struct expr* expr = parse_expression(parser);
-    parser_consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after expresion.");
+    parser_consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
     return (struct expr*)expr_new_grouping(expr);
   }
 
