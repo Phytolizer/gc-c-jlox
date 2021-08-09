@@ -1,6 +1,5 @@
 #include <gc.h>
 #include <private/hash/table.h>
-#include <stdio.h>  // for debugging
 #include <string.h>
 
 #define INITIAL_CAPACITY 8
