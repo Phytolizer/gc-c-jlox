@@ -24,7 +24,7 @@ static void report(size_t line, const char* where, const char* message);
 static void library_run(const char* text_begin, const char* text_end)
 {
   if (!interpreter) {
-    interpreter = GC_MALLOC(sizeof(struct interpreter));
+    interpreter = interpreter_new();
   }
   struct scanner* scanner = scanner_new(text_begin, text_end);
   struct token_list* tokens = scanner_scan_tokens(scanner);

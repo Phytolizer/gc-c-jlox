@@ -15,7 +15,7 @@ static void scanner_scan_token(struct scanner* self);
 static char scanner_advance(struct scanner* self);
 static void scanner_add_token(struct scanner* self,
                               enum token_type type,
-                              struct object value);
+                              struct object* value);
 static bool scanner_match(struct scanner* self, char expected);
 static char scanner_peek(struct scanner* self);
 static char scanner_peek_next(struct scanner* self);
@@ -51,7 +51,7 @@ struct token_list* scanner_scan_tokens(struct scanner* self)
                   (struct token) {
                       .type = TOKEN_EOF,
                       .lexeme = "",
-                      .literal = OBJECT_NULL(),
+                      .literal = object_new_null(),
                       .line = self->line,
                   });
   return self->tokens;
@@ -67,58 +67,58 @@ static void scanner_scan_token(struct scanner* self)
   char c = scanner_advance(self);
   switch (c) {
     case '(':
-      scanner_add_token(self, TOKEN_LEFT_PAREN, OBJECT_NULL());
+      scanner_add_token(self, TOKEN_LEFT_PAREN, object_new_null());
       break;
     case ')':
-      scanner_add_token(self, TOKEN_RIGHT_PAREN, OBJECT_NULL());
+      scanner_add_token(self, TOKEN_RIGHT_PAREN, object_new_null());
       break;
     case '{':
-      scanner_add_token(self, TOKEN_LEFT_BRACE, OBJECT_NULL());
+      scanner_add_token(self, TOKEN_LEFT_BRACE, object_new_null());
       break;
     case '}':
-      scanner_add_token(self, TOKEN_RIGHT_BRACE, OBJECT_NULL());
+      scanner_add_token(self, TOKEN_RIGHT_BRACE, object_new_null());
       break;
     case ',':
-      scanner_add_token(self, TOKEN_COMMA, OBJECT_NULL());
+      scanner_add_token(self, TOKEN_COMMA, object_new_null());
       break;
     case '.':
-      scanner_add_token(self, TOKEN_DOT, OBJECT_NULL());
+      scanner_add_token(self, TOKEN_DOT, object_new_null());
       break;
     case '-':
-      scanner_add_token(self, TOKEN_MINUS, OBJECT_NULL());
+      scanner_add_token(self, TOKEN_MINUS, object_new_null());
       break;
     case '+':
-      scanner_add_token(self, TOKEN_PLUS, OBJECT_NULL());
+      scanner_add_token(self, TOKEN_PLUS, object_new_null());
       break;
     case ';':
-      scanner_add_token(self, TOKEN_SEMICOLON, OBJECT_NULL());
+      scanner_add_token(self, TOKEN_SEMICOLON, object_new_null());
       break;
     case '*':
-      scanner_add_token(self, TOKEN_STAR, OBJECT_NULL());
+      scanner_add_token(self, TOKEN_STAR, object_new_null());
       break;
     case '!':
       scanner_add_token(
           self,
           scanner_match(self, '=') ? TOKEN_BANG_EQUAL : TOKEN_BANG,
-          OBJECT_NULL());
+          object_new_null());
       break;
     case '=':
       scanner_add_token(
           self,
           scanner_match(self, '=') ? TOKEN_EQUAL_EQUAL : TOKEN_EQUAL,
-          OBJECT_NULL());
+          object_new_null());
       break;
     case '<':
       scanner_add_token(
           self,
           scanner_match(self, '=') ? TOKEN_LESS_EQUAL : TOKEN_LESS,
-          OBJECT_NULL());
+          object_new_null());
       break;
     case '>':
       scanner_add_token(
           self,
           scanner_match(self, '=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER,
-          OBJECT_NULL());
+          object_new_null());
       break;
     case ' ':
     case '\r':
@@ -133,7 +133,7 @@ static void scanner_scan_token(struct scanner* self)
           scanner_advance(self);
         }
       } else {
-        scanner_add_token(self, TOKEN_SLASH, OBJECT_NULL());
+        scanner_add_token(self, TOKEN_SLASH, object_new_null());
       }
       break;
     case '"':
@@ -158,7 +158,7 @@ static char scanner_advance(struct scanner* self)
 
 static void scanner_add_token(struct scanner* self,
                               enum token_type type,
-                              struct object value)
+                              struct object* value)
 {
   char* text = GC_MALLOC(self->current - self->start + 1);
   strncpy(text, self->source_begin + self->start, self->current - self->start);
@@ -219,7 +219,7 @@ static void scanner_string(struct scanner* self)
   strncpy(value,
           self->source_begin + self->start + 1,
           self->current - self->start - 2);
-  scanner_add_token(self, TOKEN_STRING, OBJECT_STRING(value));
+  scanner_add_token(self, TOKEN_STRING, object_new_string(value));
 }
 
 static void scanner_number(struct scanner* self)
@@ -239,7 +239,7 @@ static void scanner_number(struct scanner* self)
   char* value = GC_MALLOC(self->current - self->start + 1);
   strncpy(value, self->source_begin + self->start, self->current - self->start);
   double dval = strtod(value, NULL);
-  scanner_add_token(self, TOKEN_NUMBER, OBJECT_NUMBER(dval));
+  scanner_add_token(self, TOKEN_NUMBER, object_new_number(dval));
 }
 
 static bool is_alpha(char c)
@@ -268,7 +268,7 @@ static void scanner_identifier(struct scanner* self)
   if (iptr) {
     type = *(enum token_type*)(*iptr);
   }
-  scanner_add_token(self, type, OBJECT_NULL());
+  scanner_add_token(self, type, object_new_null());
 }
 
 static enum token_type* newtt(enum token_type type)

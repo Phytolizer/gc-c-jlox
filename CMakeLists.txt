@@ -24,8 +24,10 @@ add_library(
     gc-c-jlox_lib OBJECT
     source/lib.c
     source/private/interpreter.c
+    source/private/environment.c
     source/private/object.c
     source/private/parser.c
+    source/private/runtime_error.c
     source/private/scanner.c
     source/private/strutils.c
     source/private/token.c

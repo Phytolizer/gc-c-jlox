@@ -33,14 +33,45 @@ struct my_string_printer {
   size_t len;
 };
 
-static struct my_file_printer* file_printer(FILE* fp);
-static struct my_string_printer* string_printer(char* str, size_t len);
+static struct my_file_printer* file_printer_new(FILE* fp);
+static struct my_string_printer* string_printer_new(char* str, size_t len);
 static size_t object_print_to_file(struct my_printer* printer,
                                    const struct object* obj);
 static size_t object_print_to_string(struct my_printer* printer,
                                      const struct object* obj);
 static size_t fnprintf(FILE* fp, size_t _n, const char* format, ...)
     __attribute__((format(printf, 3, 4)));
+
+struct object* object_new_string(char* value)
+{
+  struct object* obj = GC_MALLOC(sizeof(struct object));
+  obj->type = OBJECT_TYPE_STRING;
+  obj->value.s = value;
+  return obj;
+}
+
+struct object* object_new_number(double value)
+{
+  struct object* obj = GC_MALLOC(sizeof(struct object));
+  obj->type = OBJECT_TYPE_NUMBER;
+  obj->value.d = value;
+  return obj;
+}
+
+struct object* object_new_bool(bool value)
+{
+  struct object* obj = GC_MALLOC(sizeof(struct object));
+  obj->type = OBJECT_TYPE_BOOL;
+  obj->value.b = value;
+  return obj;
+}
+
+struct object* object_new_null(void)
+{
+  struct object* obj = GC_MALLOC(sizeof(struct object));
+  obj->type = OBJECT_TYPE_NULL;
+  return obj;
+}
 
 size_t object_print(const struct object* obj)
 {
@@ -49,15 +80,15 @@ size_t object_print(const struct object* obj)
 
 size_t object_fprint(FILE* f, const struct object* obj)
 {
-  return object_print_to_file((struct my_printer*)file_printer(f), obj);
+  return object_print_to_file((struct my_printer*)file_printer_new(f), obj);
 }
 
 size_t object_snprint(char* s, size_t n, const struct object* obj)
 {
-  return object_print_to_string((struct my_printer*)string_printer(s, n), obj);
+  return object_print_to_string((struct my_printer*)string_printer_new(s, n), obj);
 }
 
-static struct my_file_printer* file_printer(FILE* fp)
+static struct my_file_printer* file_printer_new(FILE* fp)
 {
   struct my_file_printer* handle = GC_MALLOC(sizeof(struct my_file_printer));
   handle->fp = fp;
@@ -65,7 +96,7 @@ static struct my_file_printer* file_printer(FILE* fp)
   return handle;
 }
 
-static struct my_string_printer* string_printer(char* str, size_t len)
+static struct my_string_printer* string_printer_new(char* str, size_t len)
 {
   struct my_string_printer* handle =
       GC_MALLOC(sizeof(struct my_string_printer));

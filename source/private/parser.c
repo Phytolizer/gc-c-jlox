@@ -7,9 +7,11 @@
 
 #include "private/ast/stmt.h"
 
+static struct stmt* parse_declaration(struct parser* parser);
 static struct stmt* parse_statement(struct parser* parser);
 static struct stmt* parse_print_statement(struct parser* parser);
 static struct stmt* parse_expression_statement(struct parser* parser);
+static struct stmt* parse_var_declaration(struct parser* parser);
 
 static struct expr* parse_expression(struct parser* parser);
 static struct expr* parse_equality(struct parser* parser);
@@ -43,13 +45,30 @@ struct stmt_list* parser_parse(struct parser* parser)
 {
   struct stmt_list* statements = stmt_list_new();
   while (!parser_is_at_end(parser)) {
-    struct stmt* statement = parse_statement(parser);
+    struct stmt* statement = parse_declaration(parser);
     if (statement) {
       stmt_list_push(statements, statement);
     }
   }
 
   return statements;
+}
+
+static struct stmt* parse_declaration(struct parser* parser)
+{
+  if (parser_match(parser, 1, TOKEN_VAR)) {
+    struct stmt* decl = parse_var_declaration(parser);
+    if (decl) {
+      return decl;
+    }
+  } else {
+    struct stmt* stmt = parse_statement(parser);
+    if (stmt) {
+      return stmt;
+    }
+  }
+  parser_synchronize(parser);
+  return NULL;
 }
 
 static struct stmt* parse_statement(struct parser* parser)
@@ -84,6 +103,29 @@ static struct stmt* parse_expression_statement(struct parser* parser)
     return NULL;
   }
   return (struct stmt*)stmt_new_expression(expr);
+}
+
+static struct stmt* parse_var_declaration(struct parser* parser)
+{
+  struct token* name =
+      parser_consume(parser, TOKEN_IDENTIFIER, "Expect variable name.");
+  if (!name) {
+    return NULL;
+  }
+  struct expr* initializer = NULL;
+  if (parser_match(parser, 1, TOKEN_EQUAL)) {
+    initializer = parse_expression(parser);
+    if (!initializer) {
+      return NULL;
+    }
+  }
+
+  if (!parser_consume(
+          parser, TOKEN_SEMICOLON, "Expect ';' after variable declaration."))
+  {
+    return NULL;
+  }
+  return (struct stmt*)stmt_new_var(*name, initializer);
 }
 
 static struct expr* parse_expression(struct parser* parser)
@@ -190,17 +232,21 @@ static struct expr* parse_unary(struct parser* parser)
 static struct expr* parse_primary(struct parser* parser)
 {
   if (parser_match(parser, 1, TOKEN_FALSE)) {
-    return (struct expr*)expr_new_literal(OBJECT_BOOL(false));
+    return (struct expr*)expr_new_literal(object_new_bool(false));
   }
   if (parser_match(parser, 1, TOKEN_TRUE)) {
-    return (struct expr*)expr_new_literal(OBJECT_BOOL(true));
+    return (struct expr*)expr_new_literal(object_new_bool(true));
   }
   if (parser_match(parser, 1, TOKEN_NIL)) {
-    return (struct expr*)expr_new_literal(OBJECT_NULL());
+    return (struct expr*)expr_new_literal(object_new_null());
   }
 
   if (parser_match(parser, 2, TOKEN_NUMBER, TOKEN_STRING)) {
     return (struct expr*)expr_new_literal(parser_previous(parser)->literal);
+  }
+
+  if (parser_match(parser, 1, TOKEN_IDENTIFIER)) {
+    return (struct expr*)expr_new_variable(*parser_previous(parser));
   }
 
   if (parser_match(parser, 1, TOKEN_LEFT_PAREN)) {

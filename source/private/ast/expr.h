@@ -8,6 +8,7 @@ enum expr_type
   EXPR_GROUPING,
   EXPR_LITERAL,
   EXPR_UNARY,
+  EXPR_VARIABLE,
 };
 
 struct expr {
@@ -28,7 +29,7 @@ struct grouping_expr {
 
 struct literal_expr {
   struct expr base;
-  struct object value;
+  struct object* value;
 };
 
 struct unary_expr {
@@ -37,12 +38,18 @@ struct unary_expr {
   struct expr* right;
 };
 
+struct variable_expr {
+  struct expr base;
+  struct token name;
+};
+
 struct binary_expr* expr_new_binary(struct expr* left,
                                     struct token op,
                                     struct expr* right);
 struct grouping_expr* expr_new_grouping(struct expr* expression);
-struct literal_expr* expr_new_literal(struct object value);
+struct literal_expr* expr_new_literal(struct object* value);
 struct unary_expr* expr_new_unary(struct token op, struct expr* right);
+struct variable_expr* expr_new_variable(struct token name);
 
 #define EXPR_DECLARE_ACCEPT_FOR(result_type, visitor_type) \
   result_type expr_accept_##visitor_type(struct expr* expr, \
@@ -62,5 +69,8 @@ struct unary_expr* expr_new_unary(struct token op, struct expr* right);
                                                  (struct literal_expr*)expr); \
       case EXPR_UNARY: \
         return visitor_type##_visit_unary_expr(v, (struct unary_expr*)expr); \
+      case EXPR_VARIABLE: \
+        return visitor_type##_visit_variable_expr( \
+            v, (struct variable_expr*)expr); \
     } \
   }

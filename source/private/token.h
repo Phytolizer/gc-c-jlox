@@ -6,7 +6,7 @@
 struct token {
   enum token_type type;
   char* lexeme;
-  struct object literal;
+  struct object* literal;
   size_t line;
 };
 

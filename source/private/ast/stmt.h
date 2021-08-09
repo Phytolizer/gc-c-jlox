@@ -1,9 +1,12 @@
 #pragma once
 
+#include <private/token.h>
+
 enum stmt_type
 {
   STMT_EXPRESSION,
   STMT_PRINT,
+  STMT_VAR,
 };
 
 struct stmt {
@@ -20,8 +23,15 @@ struct print_stmt {
   struct expr* expression;
 };
 
+struct var_stmt {
+  struct stmt base;
+  struct token name;
+  struct expr* initializer;
+};
+
 struct expression_stmt* stmt_new_expression(struct expr* expression);
 struct print_stmt* stmt_new_print(struct expr* expression);
+struct var_stmt* stmt_new_var(struct token name, struct expr* initializer);
 
 #define STMT_DECLARE_ACCEPT_FOR(result_type, visitor_type) \
   result_type stmt_accept_##visitor_type(struct stmt* stmt, \
@@ -32,8 +42,12 @@ struct print_stmt* stmt_new_print(struct expr* expression);
   { \
     switch (stmt->type) { \
       case STMT_EXPRESSION: \
-        return visitor_type##_visit_expression_stmt(visitor, stmt); \
+        return visitor_type##_visit_expression_stmt( \
+            visitor, (struct expression_stmt*)stmt); \
       case STMT_PRINT: \
-        return visitor_type##_visit_print_stmt(visitor, stmt); \
+        return visitor_type##_visit_print_stmt(visitor, \
+                                               (struct print_stmt*)stmt); \
+      case STMT_VAR: \
+        return visitor_type##_visit_var_stmt(visitor, (struct var_stmt*)stmt); \
     } \
   }

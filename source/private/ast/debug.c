@@ -1,6 +1,8 @@
 #include <private/ast/debug.h>
 #include <stdio.h>
 
+#include "private/token.h"
+
 size_t AstDebugIndentLevel = 0;
 
 void ast_debug_print_indent(void)
@@ -53,7 +55,7 @@ void expr_debug(struct expr* expr)
       ++AstDebugIndentLevel;
       ast_debug_print_indent();
       printf(".value = ");
-      object_print(&literal->value);
+      object_print(literal->value);
       printf(",\n");
       --AstDebugIndentLevel;
       ast_debug_print_indent();
@@ -71,6 +73,19 @@ void expr_debug(struct expr* expr)
       ast_debug_print_indent();
       printf(".right = ");
       expr_debug(unary->right);
+      printf(",\n");
+      --AstDebugIndentLevel;
+      ast_debug_print_indent();
+      printf("}");
+      break;
+    }
+    case EXPR_VARIABLE: {
+      struct variable_expr* variable = (struct variable_expr*)expr;
+      printf("VARIABLE_EXPR {\n");
+      ++AstDebugIndentLevel;
+      ast_debug_print_indent();
+      printf(".name = ");
+      token_print(&variable->name);
       printf(",\n");
       --AstDebugIndentLevel;
       ast_debug_print_indent();
@@ -104,6 +119,25 @@ void stmt_debug(struct stmt* stmt)
       printf(".expression = ");
       expr_debug(print->expression);
       printf(",\n");
+      --AstDebugIndentLevel;
+      ast_debug_print_indent();
+      printf("}");
+      break;
+    }
+    case STMT_VAR: {
+      struct var_stmt* var = (struct var_stmt*)stmt;
+      printf("VAR_STMT {\n");
+      ++AstDebugIndentLevel;
+      ast_debug_print_indent();
+      printf(".name = ");
+      token_print(&var->name);
+      printf(",\n");
+      if (var->initializer) {
+        ast_debug_print_indent();
+        printf(".initializer = ");
+        expr_debug(var->initializer);
+        printf(",\n");
+      }
       --AstDebugIndentLevel;
       ast_debug_print_indent();
       printf("}");

@@ -19,9 +19,7 @@ struct hash_table {
 };
 
 struct hash_table* hash_table_new(hash_function function);
-void hash_table_insert(struct hash_table* table,
-                       const char* key_begin,
-                       void* value);
+void hash_table_insert(struct hash_table* table, const char* key, void* value);
 bool hash_table_contains(struct hash_table* table,
                          const char* key_begin,
                          size_t key_len);

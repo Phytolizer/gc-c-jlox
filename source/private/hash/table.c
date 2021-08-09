@@ -23,17 +23,15 @@ struct hash_table* hash_table_new(hash_function function)
   return table;
 }
 
-void hash_table_insert(struct hash_table* table,
-                       const char* key_begin,
-                       void* value)
+void hash_table_insert(struct hash_table* table, const char* key, void* value)
 {
   if (table->len == 0 || (double)table->len / (double)table->cap > MAX_LOAD) {
     rehash(table);
   }
   insert_raw(table->data,
              table->cap,
-             table->function(key_begin, strlen(key_begin)),
-             GC_STRDUP(key_begin),
+             table->function(key, strlen(key)),
+             GC_STRDUP(key),
              value);
   ++table->len;
 }
