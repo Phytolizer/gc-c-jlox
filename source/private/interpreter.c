@@ -17,9 +17,10 @@
 
 // #define INTERPRETER_DEBUG
 
-static struct object* lox_clock(struct object_list* parameters)
+static struct object* lox_clock(struct interpreter* interpreter,
+                                struct object_list* parameters)
 {
-  return OBJECT_NUMBER(clock() / CLOCKS_PER_SEC);
+  return OBJECT_NUMBER(time(NULL) - interpreter->init_time);
 }
 
 enum interpret_result_type
@@ -402,7 +403,8 @@ static struct interpret_result interpreter_call(struct interpreter* interpreter,
 {
   switch (callee->type) {
     case OBJECT_TYPE_NATIVE_FUNCTION: {
-      return INTERPRET_OK(OBJECT_AS_NATIVE_FUNCTION(callee).func(arguments));
+      return INTERPRET_OK(
+          OBJECT_AS_NATIVE_FUNCTION(callee).func(interpreter, arguments));
     }
     default:
       ASSERT_UNREACHABLE();
@@ -498,6 +500,7 @@ struct interpreter* interpreter_new(void)
   struct interpreter* interpreter = GC_MALLOC(sizeof(struct interpreter));
   interpreter->globals = environment_new();
   interpreter->environment = interpreter->globals;
+  interpreter->init_time = time(NULL);
   environment_define(
       interpreter->globals, "clock", OBJECT_NATIVE_FUNCTION(0, lox_clock));
   return interpreter;

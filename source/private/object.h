@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+struct interpreter;
+
 enum object_type
 {
   OBJECT_TYPE_STRING,
@@ -17,7 +19,7 @@ struct object_list;
 
 struct native_function {
   long arity;
-  struct object* (*func)(struct object_list*);
+  struct object* (*func)(struct interpreter*, struct object_list*);
 };
 
 struct object {
@@ -37,7 +39,7 @@ struct object* object_new_number(double value);
 struct object* object_new_bool(bool value);
 struct object* object_new_null(void);
 struct object* object_new_native_function(
-    long arity, struct object* (*value)(struct object_list*));
+    long arity, struct object* (*value)(struct interpreter*, struct object_list*));
 
 long object_arity(struct object* obj);
 

@@ -77,7 +77,7 @@ struct object* object_new_null(void)
 }
 
 struct object* object_new_native_function(
-    long arity, struct object* (*value)(struct object_list*))
+    long arity, struct object* (*value)(struct interpreter*, struct object_list*))
 {
   struct object* obj = GC_MALLOC(sizeof(struct object));
   obj->type = OBJECT_TYPE_NATIVE_FUNCTION;
