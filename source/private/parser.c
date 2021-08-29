@@ -13,6 +13,7 @@ static struct stmt* parse_print_statement(struct parser* parser);
 static struct stmt* parse_block(struct parser* parser);
 static struct stmt* parse_expression_statement(struct parser* parser);
 static struct stmt* parse_if_statement(struct parser* parser);
+static struct stmt* parse_for_statement(struct parser* parser);
 static struct stmt* parse_var_declaration(struct parser* parser);
 static struct stmt* parse_while_statement(struct parser* parser);
 
@@ -81,6 +82,9 @@ static struct stmt* parse_statement(struct parser* parser)
 {
   if (parser_match(parser, 1, TOKEN_IF)) {
     return parse_if_statement(parser);
+  }
+  if (parser_match(parser, 1, TOKEN_FOR)) {
+    return parse_for_statement(parser);
   }
   if (parser_match(parser, 1, TOKEN_PRINT)) {
     return parse_print_statement(parser);
@@ -167,6 +171,77 @@ static struct stmt* parse_if_statement(struct parser* parser)
   }
 
   return (struct stmt*)stmt_new_if(condition, then_branch, else_branch);
+}
+
+static struct stmt* parse_for_statement(struct parser* parser)
+{
+  if (!parser_consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after 'for'.")) {
+    return NULL;
+  }
+
+  struct stmt* initializer;
+  if (parser_match(parser, 1, TOKEN_SEMICOLON)) {
+    initializer = NULL;
+  } else if (parser_match(parser, 1, TOKEN_VAR)) {
+    initializer = parse_var_declaration(parser);
+    if (!initializer) {
+      return NULL;
+    }
+  } else {
+    initializer = parse_expression_statement(parser);
+    if (!initializer) {
+      return NULL;
+    }
+  }
+
+  struct expr* condition = NULL;
+  if (!parser_check(parser, TOKEN_SEMICOLON)) {
+    condition = parse_expression(parser);
+    if (!condition) {
+      return NULL;
+    }
+  }
+  if (!parser_consume(
+          parser, TOKEN_SEMICOLON, "Expect ';' after loop condition."))
+  {
+    return NULL;
+  }
+
+  struct expr* increment = NULL;
+  if (!parser_check(parser, TOKEN_RIGHT_PAREN)) {
+    increment = parse_expression(parser);
+    if (!increment) {
+      return NULL;
+    }
+  }
+  if (!parser_consume(
+          parser, TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.")) {
+    return NULL;
+  }
+
+  struct stmt* body = parse_statement(parser);
+  if (!body) {
+    return NULL;
+  }
+
+  if (increment) {
+    struct stmt_list* new_body = stmt_list_new();
+    LIST_PUSH(new_body, body);
+    LIST_PUSH(new_body, (struct stmt*)stmt_new_expression(increment));
+    body = (struct stmt*)stmt_new_block(new_body);
+  }
+
+  if (!condition) {
+    condition = (struct expr*)expr_new_literal(OBJECT_BOOL(true));
+  }
+  body = (struct stmt*)stmt_new_while(condition, body);
+  if (initializer) {
+    struct stmt_list* new_body = stmt_list_new();
+    LIST_PUSH(new_body, initializer);
+    LIST_PUSH(new_body, body);
+    body = (struct stmt*)stmt_new_block(new_body);
+  }
+  return body;
 }
 
 static struct stmt* parse_var_declaration(struct parser* parser)
