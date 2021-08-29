@@ -26,6 +26,18 @@ struct expression_stmt* stmt_new_expression(struct expr* expression)
   return stmt;
 }
 
+struct if_stmt* stmt_new_if(struct expr* condition,
+                            struct stmt* then_branch,
+                            struct stmt* else_branch)
+{
+  struct if_stmt* stmt = GC_MALLOC(sizeof(struct if_stmt)); 
+  stmt->base.type = STMT_IF;
+  stmt->condition = condition;
+  stmt->then_branch = then_branch;
+  stmt->else_branch = else_branch;
+  return stmt;
+}
+
 struct print_stmt* stmt_new_print(struct expr* expression)
 {
   struct print_stmt* stmt = GC_MALLOC(sizeof(struct print_stmt));

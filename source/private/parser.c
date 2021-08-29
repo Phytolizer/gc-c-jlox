@@ -12,6 +12,7 @@ static struct stmt* parse_statement(struct parser* parser);
 static struct stmt* parse_print_statement(struct parser* parser);
 static struct stmt* parse_block(struct parser* parser);
 static struct stmt* parse_expression_statement(struct parser* parser);
+static struct stmt* parse_if_statement(struct parser* parser);
 static struct stmt* parse_var_declaration(struct parser* parser);
 
 static struct expr* parse_expression(struct parser* parser);
@@ -75,6 +76,9 @@ static struct stmt* parse_declaration(struct parser* parser)
 
 static struct stmt* parse_statement(struct parser* parser)
 {
+  if (parser_match(parser, 1, TOKEN_IF)) {
+    return parse_if_statement(parser);
+  }
   if (parser_match(parser, 1, TOKEN_PRINT)) {
     return parse_print_statement(parser);
   }
@@ -127,6 +131,36 @@ static struct stmt* parse_expression_statement(struct parser* parser)
     return NULL;
   }
   return (struct stmt*)stmt_new_expression(expr);
+}
+
+static struct stmt* parse_if_statement(struct parser* parser)
+{
+  if (!parser_consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after 'if'.")) {
+    return NULL;
+  }
+  struct expr* condition = parse_expression(parser);
+  if (!condition) {
+    return NULL;
+  }
+  if (!parser_consume(
+          parser, TOKEN_RIGHT_PAREN, "Expect ')' after if condition."))
+  {
+    return NULL;
+  }
+
+  struct stmt* then_branch = parse_statement(parser);
+  if (!then_branch) {
+    return NULL;
+  }
+  struct stmt* else_branch = NULL;
+  if (parser_match(parser, 1, TOKEN_ELSE)) {
+    else_branch = parse_statement(parser);
+    if (!else_branch) {
+      return NULL;
+    }
+  }
+
+  return (struct stmt*)stmt_new_if(condition, then_branch, else_branch);
 }
 
 static struct stmt* parse_var_declaration(struct parser* parser)

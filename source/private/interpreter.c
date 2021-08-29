@@ -66,10 +66,12 @@ static struct interpret_result interpreter_visit_variable_expr(
 
 static struct runtime_error* interpreter_visit_block_stmt(
     struct interpreter* interpreter, struct block_stmt* stmt);
-static struct runtime_error* interpreter_visit_print_stmt(
-    struct interpreter* interpreter, struct print_stmt* stmt);
 static struct runtime_error* interpreter_visit_expression_stmt(
     struct interpreter* interpreter, struct expression_stmt* stmt);
+static struct runtime_error* interpreter_visit_if_stmt(
+    struct interpreter* interpreter, struct if_stmt* stmt);
+static struct runtime_error* interpreter_visit_print_stmt(
+    struct interpreter* interpreter, struct print_stmt* stmt);
 static struct runtime_error* interpreter_visit_var_stmt(
     struct interpreter* interpreter, struct var_stmt* stmt);
 
@@ -327,6 +329,22 @@ static struct runtime_error* interpreter_visit_expression_stmt(
       evaluate(interpreter, expression_stmt->expression);
   if (result.type == INTERPRET_RESULT_ERROR) {
     return result.u.err;
+  }
+  return NULL;
+}
+
+static struct runtime_error* interpreter_visit_if_stmt(
+    struct interpreter* interpreter, struct if_stmt* stmt)
+{
+  struct interpret_result condition = evaluate(interpreter, stmt->condition);
+  if (condition.type == INTERPRET_RESULT_ERROR) {
+    return condition.u.err;
+  }
+  if (is_truthy(condition.u.ok)) {
+    return interpreter_execute(interpreter, stmt->then_branch);
+  }
+  if (stmt->else_branch != NULL) {
+    return interpreter_execute(interpreter, stmt->else_branch);
   }
   return NULL;
 }
