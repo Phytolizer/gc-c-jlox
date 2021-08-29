@@ -4,11 +4,13 @@
 #include <private/list.h>
 #include <private/token.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 enum stmt_type
 {
   STMT_BLOCK,
   STMT_EXPRESSION,
+  STMT_FUNCTION,
   STMT_IF,
   STMT_PRINT,
   STMT_VAR,
@@ -66,6 +68,9 @@ struct while_stmt {
 
 struct block_stmt* stmt_new_block(struct stmt_list* statements);
 struct expression_stmt* stmt_new_expression(struct expr* expression);
+struct function_stmt* stmt_new_function(struct token name,
+                                        struct token_list* params,
+                                        struct stmt_list* body);
 struct if_stmt* stmt_new_if(struct expr* condition,
                             struct stmt* then_branch,
                             struct stmt* else_branch);
@@ -87,6 +92,9 @@ struct while_stmt* stmt_new_while(struct expr* condition, struct stmt* body);
       case STMT_EXPRESSION: \
         return visitor_type##_visit_expression_stmt( \
             visitor, (struct expression_stmt*)stmt); \
+      case STMT_FUNCTION: \
+        return visitor_type##_visit_function_stmt( \
+            visitor, (struct function_stmt*)stmt); \
       case STMT_IF: \
         return visitor_type##_visit_if_stmt(visitor, (struct if_stmt*)stmt); \
       case STMT_PRINT: \

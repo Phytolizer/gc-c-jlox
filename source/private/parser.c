@@ -2,6 +2,7 @@
 #include <lib.h>
 #include <private/ast/expr.h>
 #include <private/parser.h>
+#include <private/strutils.h>
 #include <stdarg.h>
 #include <stdbool.h>
 
@@ -10,10 +11,11 @@
 static struct stmt* parse_declaration(struct parser* parser);
 static struct stmt* parse_statement(struct parser* parser);
 static struct stmt* parse_print_statement(struct parser* parser);
-static struct stmt* parse_block(struct parser* parser);
+static struct stmt_list* parse_block(struct parser* parser);
 static struct stmt* parse_expression_statement(struct parser* parser);
 static struct stmt* parse_if_statement(struct parser* parser);
 static struct stmt* parse_for_statement(struct parser* parser);
+static struct stmt* parse_function(struct parser* parser, const char* kind);
 static struct stmt* parse_var_declaration(struct parser* parser);
 static struct stmt* parse_while_statement(struct parser* parser);
 
@@ -65,7 +67,12 @@ struct stmt_list* parser_parse(struct parser* parser)
 
 static struct stmt* parse_declaration(struct parser* parser)
 {
-  if (parser_match(parser, 1, TOKEN_VAR)) {
+  if (parser_match(parser, 1, TOKEN_FUN)) {
+    struct stmt* decl = parse_function(parser, "function");
+    if (decl) {
+      return decl;
+    }
+  } else if (parser_match(parser, 1, TOKEN_VAR)) {
     struct stmt* decl = parse_var_declaration(parser);
     if (decl) {
       return decl;
@@ -95,7 +102,11 @@ static struct stmt* parse_statement(struct parser* parser)
     return parse_while_statement(parser);
   }
   if (parser_match(parser, 1, TOKEN_LEFT_BRACE)) {
-    return parse_block(parser);
+    struct stmt_list* statements = parse_block(parser);
+    if (!statements) {
+      return NULL;
+    }
+    return (struct stmt*)stmt_new_block(statements);
   }
 
   return parse_expression_statement(parser);
@@ -113,7 +124,7 @@ static struct stmt* parse_print_statement(struct parser* parser)
   return (struct stmt*)stmt_new_print(value);
 }
 
-static struct stmt* parse_block(struct parser* parser)
+static struct stmt_list* parse_block(struct parser* parser)
 {
   struct stmt_list* statements = stmt_list_new();
 
@@ -129,7 +140,7 @@ static struct stmt* parse_block(struct parser* parser)
   if (!parser_consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after block.")) {
     return NULL;
   }
-  return (struct stmt*)stmt_new_block(statements);
+  return statements;
 }
 
 static struct stmt* parse_expression_statement(struct parser* parser)
@@ -244,6 +255,54 @@ static struct stmt* parse_for_statement(struct parser* parser)
     body = (struct stmt*)stmt_new_block(new_body);
   }
   return body;
+}
+
+#define PARAMS_MAX 255
+
+static struct stmt* parse_function(struct parser* parser, const char* kind)
+{
+  struct token* name = parser_consume(
+      parser, TOKEN_IDENTIFIER, alloc_printf("Expect %s name.", kind));
+  if (!name) {
+    return NULL;
+  }
+  if (!parser_consume(parser,
+                      TOKEN_LEFT_PAREN,
+                      alloc_printf("Expect '(' after %s name.", kind)))
+  {
+    return NULL;
+  }
+  struct token_list* parameters = token_list_new();
+  if (!parser_check(parser, TOKEN_RIGHT_PAREN)) {
+    while (true) {
+      if (parameters->length >= PARAMS_MAX) {
+        error(parser_peek(parser),
+              alloc_printf("Can't have more than %d parameters.", PARAMS_MAX));
+      }
+
+      struct token* param =
+          parser_consume(parser, TOKEN_IDENTIFIER, "Expect parameter name.");
+      if (!param) {
+        return NULL;
+      }
+      LIST_PUSH(parameters, *param);
+      if (!parser_match(parser, 1, TOKEN_COMMA)) {
+        break;
+      }
+    }
+  }
+  if (!parser_consume(
+          parser, TOKEN_RIGHT_PAREN, "Expect ')' after parameters.")) {
+    return NULL;
+  }
+  if (!parser_consume(parser,
+                      TOKEN_LEFT_BRACE,
+                      alloc_printf("Expect '{' before %s body.", kind)))
+  {
+    return NULL;
+  }
+  struct stmt_list* body = parse_block(parser);
+  return (struct stmt*)stmt_new_function(*name, parameters, body);
 }
 
 static struct stmt* parse_var_declaration(struct parser* parser)

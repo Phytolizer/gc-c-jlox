@@ -26,6 +26,18 @@ struct expression_stmt* stmt_new_expression(struct expr* expression)
   return stmt;
 }
 
+struct function_stmt* stmt_new_function(struct token name,
+                                        struct token_list* params,
+                                        struct stmt_list* body)
+{
+  struct function_stmt* stmt = GC_MALLOC(sizeof(struct function_stmt));
+  stmt->base.type = STMT_FUNCTION;
+  stmt->name = name;
+  stmt->params = params;
+  stmt->body = body;
+  return stmt;
+}
+
 struct if_stmt* stmt_new_if(struct expr* condition,
                             struct stmt* then_branch,
                             struct stmt* else_branch)

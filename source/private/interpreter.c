@@ -90,6 +90,8 @@ static struct runtime_error* interpreter_visit_block_stmt(
     struct interpreter* interpreter, struct block_stmt* stmt);
 static struct runtime_error* interpreter_visit_expression_stmt(
     struct interpreter* interpreter, struct expression_stmt* stmt);
+static struct runtime_error* interpreter_visit_function_stmt(
+    struct interpreter* interpreter, struct function_stmt* stmt);
 static struct runtime_error* interpreter_visit_if_stmt(
     struct interpreter* interpreter, struct if_stmt* stmt);
 static struct runtime_error* interpreter_visit_print_stmt(
@@ -412,9 +414,25 @@ static struct interpret_result interpreter_call(struct interpreter* interpreter,
                                                 struct object_list* arguments)
 {
   switch (callee->type) {
-    case OBJECT_TYPE_NATIVE_FUNCTION: {
+    case OBJECT_TYPE_NATIVE_FUNCTION:
       return INTERPRET_OK(
           OBJECT_AS_NATIVE_FUNCTION(callee).func(interpreter, arguments));
+    case OBJECT_TYPE_FUNCTION: {
+      struct function func = OBJECT_AS_FUNCTION(callee);
+      struct environment* environment =
+          environment_new_enclosed(interpreter->globals);
+      for (long i = 0; i < func.declaration->params->length; ++i) {
+        environment_define(environment,
+                           func.declaration->params->pointer[i].lexeme,
+                           // arity was checked, so this is OK
+                           arguments->pointer[i]);
+      }
+      struct runtime_error* err = interpreter_execute_block(
+          interpreter, func.declaration->body, environment);
+      if (err) {
+        return INTERPRET_ERROR(err);
+      }
+      return INTERPRET_OK(OBJECT_NULL());
     }
     default:
       ASSERT_UNREACHABLE();
@@ -451,6 +469,17 @@ static struct runtime_error* interpreter_visit_expression_stmt(
   if (result.type == INTERPRET_RESULT_ERROR) {
     return result.u.err;
   }
+  return NULL;
+}
+
+static struct runtime_error* interpreter_visit_function_stmt(
+    struct interpreter* interpreter, struct function_stmt* stmt)
+{
+  struct function_stmt* function_stmt = (struct function_stmt*)stmt;
+  struct object* function =
+      OBJECT_FUNCTION((struct function) {.declaration = function_stmt});
+  environment_define(
+      interpreter->environment, function_stmt->name.lexeme, function);
   return NULL;
 }
 

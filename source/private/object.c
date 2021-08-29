@@ -1,5 +1,6 @@
 #include <gc.h>
 #include <private/assertions.h>
+#include <private/ast/stmt.h>
 #include <private/object.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -18,6 +19,12 @@
         return prefix##nprintf((p), (n), "NULL"); \
       case OBJECT_TYPE_NATIVE_FUNCTION: \
         return prefix##nprintf((p), (n), "<native function>"); \
+      case OBJECT_TYPE_FUNCTION: \
+        return prefix##nprintf( \
+            (p), \
+            (n), \
+            "<fn %s>", \
+            OBJECT_AS_FUNCTION(obj).declaration->name.lexeme); \
     } \
   } while (false)
 
@@ -77,7 +84,8 @@ struct object* object_new_null(void)
 }
 
 struct object* object_new_native_function(
-    long arity, struct object* (*value)(struct interpreter*, struct object_list*))
+    long arity,
+    struct object* (*value)(struct interpreter*, struct object_list*))
 {
   struct object* obj = GC_MALLOC(sizeof(struct object));
   obj->type = OBJECT_TYPE_NATIVE_FUNCTION;
@@ -86,11 +94,21 @@ struct object* object_new_native_function(
   return obj;
 }
 
+struct object* object_new_function(struct function func)
+{
+  struct object* obj = GC_MALLOC(sizeof(struct object));
+  obj->type = OBJECT_TYPE_FUNCTION;
+  obj->value.f = func;
+  return obj;
+}
+
 long object_arity(struct object* obj)
 {
   switch (obj->type) {
     case OBJECT_TYPE_NATIVE_FUNCTION:
       return OBJECT_AS_NATIVE_FUNCTION(obj).arity;
+    case OBJECT_TYPE_FUNCTION:
+      return OBJECT_AS_FUNCTION(obj).declaration->params->length;
     default:
       ASSERT_UNREACHABLE();
   }
