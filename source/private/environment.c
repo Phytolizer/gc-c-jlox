@@ -4,6 +4,7 @@
 #include <private/hash/table.h>
 #include <string.h>
 
+#include "private/object.h"
 #include "private/strutils.h"
 
 struct environment* environment_new(void)
@@ -20,6 +21,24 @@ struct environment* environment_new_enclosed(struct environment* enclosing)
   environment->enclosing = enclosing;
   environment->values = hash_table_new(hash_fnv1a);
   return environment;
+}
+
+void environment_dump(struct environment* environment)
+{
+  printf("--- ENVIRONMENT ---\n");
+  for (size_t i = 0; i < environment->values->cap; ++i) {
+    if (environment->values->data[i].key) {
+      printf("%s: ", environment->values->data[i].key);
+      object_print(environment->values->data[i].value);
+      printf("\n");
+    }
+  }
+  if (environment->enclosing) {
+    printf("--- ENCLOSING ---\n");
+    environment_dump(environment->enclosing);
+    printf("--- END ENCLOSING ---\n");
+  }
+  printf("--- END ENVIRONMENT ---\n");
 }
 
 void environment_define(struct environment* environment,

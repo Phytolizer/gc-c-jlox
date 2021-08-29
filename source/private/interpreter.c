@@ -3,6 +3,7 @@
 #include <lib.h>
 #include <math.h>
 #include <private/assertions.h>
+#include <private/ast/debug.h>
 #include <private/interpreter.h>
 #include <private/runtime_error.h>
 #include <private/strutils.h>
@@ -12,6 +13,8 @@
 #include "private/environment.h"
 
 #define NUMBER_DELTA 0.000001
+
+// #define INTERPRETER_DEBUG
 
 enum interpret_result_type
 {
@@ -50,6 +53,8 @@ static struct runtime_error* check_number_operand(struct token* op,
 static struct runtime_error* check_number_operands(struct token* op,
                                                    struct object* left,
                                                    struct object* right);
+
+static void interpreter_dump_environment(struct interpreter* interpreter);
 
 static struct interpret_result interpreter_visit_assign_expr(
     struct interpreter* interpreter, struct assign_expr* expr);
@@ -92,7 +97,21 @@ STMT_DEFINE_ACCEPT_FOR(struct runtime_error*, interpreter);
 static struct interpret_result evaluate(struct interpreter* interpreter,
                                         struct expr* expression)
 {
-  return expr_accept_interpreter(expression, interpreter);
+#ifdef INTERPRETER_DEBUG
+  printf("[INTP] Evaluating expression: ");
+  expr_debug(expression);
+  printf("\n");
+#endif
+  struct interpret_result result =
+      expr_accept_interpreter(expression, interpreter);
+#ifdef INTERPRETER_DEBUG
+  if (result.type == INTERPRET_RESULT_OK) {
+    printf("[INTP] ==> ");
+    object_print(result.u.ok);
+    printf("\n");
+  }
+#endif
+  return result;
 }
 
 static const char* stringify(struct object* obj)
@@ -107,6 +126,7 @@ static const char* stringify(struct object* obj)
     case OBJECT_TYPE_NULL:
       return "nil";
   }
+  assert(false && "impossible object type");
 }
 
 static bool is_truthy(struct object* obj)
@@ -163,6 +183,11 @@ static struct runtime_error* check_number_operands(struct token* op,
     return NULL;
   }
   return runtime_error_new(op, "Operands must be numbers.");
+}
+
+static void interpreter_dump_environment(struct interpreter* interpreter)
+{
+  environment_dump(interpreter->environment);
 }
 
 static struct interpret_result interpreter_visit_assign_expr(
@@ -328,9 +353,10 @@ static struct interpret_result interpreter_visit_variable_expr(
 static struct runtime_error* interpreter_visit_block_stmt(
     struct interpreter* interpreter, struct block_stmt* stmt)
 {
-  interpreter_execute_block(interpreter,
-                            stmt->statements,
-                            environment_new_enclosed(interpreter->environment));
+  return interpreter_execute_block(
+      interpreter,
+      stmt->statements,
+      environment_new_enclosed(interpreter->environment));
 }
 
 static struct runtime_error* interpreter_visit_print_stmt(
@@ -376,7 +402,7 @@ static struct runtime_error* interpreter_visit_if_stmt(
 static struct runtime_error* interpreter_visit_var_stmt(
     struct interpreter* interpreter, struct var_stmt* stmt)
 {
-  struct object* value = NULL;
+  struct object* value = OBJECT_NULL();
   if (stmt->initializer) {
     struct interpret_result result = evaluate(interpreter, stmt->initializer);
     switch (result.type) {
@@ -430,7 +456,19 @@ void interpret(struct interpreter* interpreter, struct stmt_list* statements)
 struct runtime_error* interpreter_execute(struct interpreter* interpreter,
                                           struct stmt* stmt)
 {
-  return stmt_accept_interpreter(stmt, interpreter);
+#ifdef INTERPRETER_DEBUG
+  printf("[INTP] Executing statement: ");
+  stmt_debug(stmt);
+  printf("\n");
+#endif
+  struct runtime_error* err = stmt_accept_interpreter(stmt, interpreter);
+#ifdef INTERPRETER_DEBUG
+  if (!err) {
+    printf("[INTP] Execution finished successfully\n");
+  }
+  interpreter_dump_environment(interpreter);
+#endif
+  return err;
 }
 
 static struct runtime_error* interpreter_execute_block(

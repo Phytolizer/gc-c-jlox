@@ -45,6 +45,7 @@ struct environment_lookup_result {
 
 struct environment* environment_new(void);
 struct environment* environment_new_enclosed(struct environment* enclosing);
+void environment_dump(struct environment* environment);
 void environment_define(struct environment* environment,
                         const char* name,
                         struct object* value);

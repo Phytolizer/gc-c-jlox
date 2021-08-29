@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <gc.h>
 #include <lib.h>
+#include <private/ast/debug.h>
 #include <private/ast/expr.h>
 #include <private/ast/printer.h>
 #include <private/interpreter.h>
@@ -33,6 +34,12 @@ static void library_run(const char* text_begin, const char* text_end)
   if (HadError) {
     return;
   }
+  printf("--- STATEMENTS ---\n");
+  for (long i = 0; i < statements->length; i++) {
+    stmt_debug(statements->pointer[i]);
+    printf("\n");
+  }
+  printf("--- END STATEMENTS ---\n");
   interpret(interpreter, statements);
 }
 
