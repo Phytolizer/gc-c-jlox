@@ -76,6 +76,8 @@ static struct runtime_error* interpreter_visit_print_stmt(
     struct interpreter* interpreter, struct print_stmt* stmt);
 static struct runtime_error* interpreter_visit_var_stmt(
     struct interpreter* interpreter, struct var_stmt* stmt);
+static struct runtime_error* interpreter_visit_while_stmt(
+    struct interpreter* interpreter, struct while_stmt* stmt);
 
 struct runtime_error* interpreter_execute(struct interpreter* interpreter,
                                           struct stmt* stmt);
@@ -387,6 +389,22 @@ static struct runtime_error* interpreter_visit_var_stmt(
   }
 
   environment_define(interpreter->environment, stmt->name.lexeme, value);
+  return NULL;
+}
+
+static struct runtime_error* interpreter_visit_while_stmt(
+    struct interpreter* interpreter, struct while_stmt* stmt)
+{
+  while (true) {
+    struct interpret_result condition = evaluate(interpreter, stmt->condition);
+    if (condition.type == INTERPRET_RESULT_ERROR) {
+      return condition.u.err;
+    }
+    if (!is_truthy(condition.u.ok)) {
+      break;
+    }
+    interpreter_execute(interpreter, stmt->body);
+  }
   return NULL;
 }
 

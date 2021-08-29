@@ -12,6 +12,7 @@ enum stmt_type
   STMT_IF,
   STMT_PRINT,
   STMT_VAR,
+  STMT_WHILE,
 };
 
 struct stmt {
@@ -50,6 +51,12 @@ struct var_stmt {
   struct expr* initializer;
 };
 
+struct while_stmt {
+  struct stmt base;
+  struct expr* condition;
+  struct stmt* body;
+};
+
 struct block_stmt* stmt_new_block(struct stmt_list* statements);
 struct expression_stmt* stmt_new_expression(struct expr* expression);
 struct if_stmt* stmt_new_if(struct expr* condition,
@@ -57,6 +64,7 @@ struct if_stmt* stmt_new_if(struct expr* condition,
                             struct stmt* else_branch);
 struct print_stmt* stmt_new_print(struct expr* expression);
 struct var_stmt* stmt_new_var(struct token name, struct expr* initializer);
+struct while_stmt* stmt_new_while(struct expr* condition, struct stmt* body);
 
 #define STMT_DECLARE_ACCEPT_FOR(result_type, visitor_type) \
   result_type stmt_accept_##visitor_type(struct stmt* stmt, \
@@ -79,6 +87,9 @@ struct var_stmt* stmt_new_var(struct token name, struct expr* initializer);
                                                (struct print_stmt*)stmt); \
       case STMT_VAR: \
         return visitor_type##_visit_var_stmt(visitor, (struct var_stmt*)stmt); \
+      case STMT_WHILE: \
+        return visitor_type##_visit_while_stmt(visitor, \
+                                               (struct while_stmt*)stmt); \
     } \
     assert(false); \
   }

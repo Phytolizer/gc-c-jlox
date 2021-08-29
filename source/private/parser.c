@@ -14,6 +14,7 @@ static struct stmt* parse_block(struct parser* parser);
 static struct stmt* parse_expression_statement(struct parser* parser);
 static struct stmt* parse_if_statement(struct parser* parser);
 static struct stmt* parse_var_declaration(struct parser* parser);
+static struct stmt* parse_while_statement(struct parser* parser);
 
 static struct expr* parse_expression(struct parser* parser);
 static struct expr* parse_assignment(struct parser* parser);
@@ -83,6 +84,9 @@ static struct stmt* parse_statement(struct parser* parser)
   }
   if (parser_match(parser, 1, TOKEN_PRINT)) {
     return parse_print_statement(parser);
+  }
+  if (parser_match(parser, 1, TOKEN_WHILE)) {
+    return parse_while_statement(parser);
   }
   if (parser_match(parser, 1, TOKEN_LEFT_BRACE)) {
     return parse_block(parser);
@@ -186,6 +190,27 @@ static struct stmt* parse_var_declaration(struct parser* parser)
     return NULL;
   }
   return (struct stmt*)stmt_new_var(*name, initializer);
+}
+
+static struct stmt* parse_while_statement(struct parser* parser)
+{
+  if (!parser_consume(parser, TOKEN_LEFT_PAREN, "Expect '(' after 'while'.")) {
+    return NULL;
+  }
+  struct expr* condition = parse_expression(parser);
+  if (!condition) {
+    return NULL;
+  }
+  if (!parser_consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after condition."))
+  {
+    return NULL;
+  }
+  struct stmt* body = parse_statement(parser);
+  if (!body) {
+    return NULL;
+  }
+
+  return (struct stmt*)stmt_new_while(condition, body);
 }
 
 static struct expr* parse_expression(struct parser* parser)
