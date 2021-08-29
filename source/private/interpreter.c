@@ -60,6 +60,8 @@ static struct interpret_result interpreter_visit_assign_expr(
     struct interpreter* interpreter, struct assign_expr* expr);
 static struct interpret_result interpreter_visit_binary_expr(
     struct interpreter* interpreter, struct binary_expr* expr);
+static struct interpret_result interpreter_visit_call_expr(
+    struct interpreter* interpreter, struct call_expr* expr);
 static struct interpret_result interpreter_visit_grouping_expr(
     struct interpreter* interpreter, struct grouping_expr* expr);
 static struct interpret_result interpreter_visit_literal_expr(
@@ -70,6 +72,10 @@ static struct interpret_result interpreter_visit_unary_expr(
     struct interpreter* interpreter, struct unary_expr* expr);
 static struct interpret_result interpreter_visit_variable_expr(
     struct interpreter* interpreter, struct variable_expr* expr);
+
+static struct interpret_result interpreter_call(struct interpreter* interpreter,
+                                                struct object* callee,
+                                                struct object_list* arguments);
 
 static struct runtime_error* interpreter_visit_block_stmt(
     struct interpreter* interpreter, struct block_stmt* stmt);
@@ -283,6 +289,40 @@ static struct interpret_result interpreter_visit_binary_expr(
   }
 }
 
+static struct interpret_result interpreter_visit_call_expr(
+    struct interpreter* interpreter, struct call_expr* expr)
+{
+  struct interpret_result callee_result = evaluate(interpreter, expr->callee);
+  if (callee_result.type == INTERPRET_RESULT_ERROR) {
+    return callee_result;
+  }
+  struct object* callee = callee_result.u.ok;
+
+  struct object_list* arguments = GC_MALLOC(sizeof(struct object_list));
+  LIST_INIT(arguments);
+  for (long i = 0; i < expr->arguments->length; ++i) {
+    struct interpret_result argument_result =
+        evaluate(interpreter, expr->arguments->pointer[i]);
+    if (argument_result.type == INTERPRET_RESULT_ERROR) {
+      return argument_result;
+    }
+    LIST_PUSH(arguments, argument_result.u.ok);
+  }
+
+  if (!OBJECT_IS_CALLABLE(callee)) {
+    return INTERPRET_ERROR(runtime_error_new(
+        &expr->paren, "Can only call functions and classes."));
+  }
+  if (object_arity(callee) != arguments->length) {
+    return INTERPRET_ERROR(
+        runtime_error_new(&expr->paren,
+                          alloc_printf("Expected %li arguments but got %li.",
+                                       object_arity(callee),
+                                       arguments->length)));
+  }
+  return interpreter_call(interpreter, callee, arguments);
+}
+
 static struct interpret_result interpreter_visit_grouping_expr(
     struct interpreter* interpreter, struct grouping_expr* expr)
 {
@@ -348,6 +388,12 @@ static struct interpret_result interpreter_visit_variable_expr(
     return INTERPRET_OK(ENVIRONMENT_LOOKUP_RESULT_GET_OK(&result));
   }
   return INTERPRET_ERROR(ENVIRONMENT_LOOKUP_RESULT_GET_ERROR(&result));
+}
+
+static struct interpret_result interpreter_call(struct interpreter* interpreter,
+                                                struct object* callee,
+                                                struct object_list* arguments)
+{
 }
 
 static struct runtime_error* interpreter_visit_block_stmt(

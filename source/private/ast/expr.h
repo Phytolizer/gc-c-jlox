@@ -1,12 +1,14 @@
 #pragma once
 
 #include <assert.h>
+#include <private/list.h>
 #include <private/token.h>
 
 enum expr_type
 {
   EXPR_ASSIGN,
   EXPR_BINARY,
+  EXPR_CALL,
   EXPR_GROUPING,
   EXPR_LITERAL,
   EXPR_LOGICAL,
@@ -17,6 +19,8 @@ enum expr_type
 struct expr {
   enum expr_type type;
 };
+
+DECLARE_NAMED_LIST(expr_list, struct expr*);
 
 struct assign_expr {
   struct expr base;
@@ -29,6 +33,13 @@ struct binary_expr {
   struct expr* left;
   struct token op;
   struct expr* right;
+};
+
+struct call_expr {
+  struct expr base;
+  struct expr* callee;
+  struct token paren;
+  struct expr_list* arguments;
 };
 
 struct grouping_expr {
@@ -63,6 +74,9 @@ struct assign_expr* expr_new_assign(struct token name, struct expr* value);
 struct binary_expr* expr_new_binary(struct expr* left,
                                     struct token op,
                                     struct expr* right);
+struct call_expr* expr_new_call(struct expr* callee,
+                                struct token paren,
+                                struct expr_list* arguments);
 struct grouping_expr* expr_new_grouping(struct expr* expression);
 struct literal_expr* expr_new_literal(struct object* value);
 struct logical_expr* expr_new_logical(struct expr* left,
@@ -83,6 +97,8 @@ struct variable_expr* expr_new_variable(struct token name);
         return visitor_type##_visit_assign_expr(v, (struct assign_expr*)expr); \
       case EXPR_BINARY: \
         return visitor_type##_visit_binary_expr(v, (struct binary_expr*)expr); \
+      case EXPR_CALL: \
+        return visitor_type##_visit_call_expr(v, (struct call_expr*)expr); \
       case EXPR_GROUPING: \
         return visitor_type##_visit_grouping_expr( \
             v, (struct grouping_expr*)expr); \

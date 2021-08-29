@@ -73,6 +73,11 @@ struct object* object_new_null(void)
   return obj;
 }
 
+long object_arity(struct object* obj)
+{
+  return 0;
+}
+
 size_t object_print(const struct object* obj)
 {
   return object_fprint(stdout, obj);

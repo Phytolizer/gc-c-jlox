@@ -34,6 +34,12 @@ struct list_unpacked_ {
 void list_reserve_(struct list_unpacked_ list, long capacity);
 void list_resize_(struct list_unpacked_ list, long length);
 
+#define LIST_INIT(L) \
+  do { \
+    (L)->pointer = NULL; \
+    (L)->length = 0; \
+    (L)->capacity = 0; \
+  } while (false)
 #define LIST_RESERVE(L, Capacity) list_reserve_(LIST_UNPACK_(L), Capacity)
 #define LIST_RESIZE(L, Length) list_resize_(LIST_UNPACK_(L), Length)
 #define LIST_PUSH(L, Elem) \

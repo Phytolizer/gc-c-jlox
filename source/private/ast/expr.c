@@ -24,6 +24,18 @@ struct binary_expr* expr_new_binary(struct expr* left,
   return expr;
 }
 
+struct call_expr* expr_new_call(struct expr* callee,
+                                struct token paren,
+                                struct expr_list* arguments)
+{
+  struct call_expr* expr = GC_MALLOC(sizeof(struct call_expr));
+  expr->base.type = EXPR_CALL;
+  expr->callee = callee;
+  expr->paren = paren;
+  expr->arguments = arguments;
+  return expr;
+}
+
 struct grouping_expr* expr_new_grouping(struct expr* expression)
 {
   struct grouping_expr* expr = GC_MALLOC(sizeof(struct grouping_expr));

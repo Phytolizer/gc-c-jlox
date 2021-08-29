@@ -1,5 +1,6 @@
 #pragma once
 
+#include <private/list.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -20,10 +21,14 @@ struct object {
   } value;
 };
 
+DECLARE_NAMED_LIST(object_list, struct object*);
+
 struct object* object_new_string(char* value);
 struct object* object_new_number(double value);
 struct object* object_new_bool(bool value);
 struct object* object_new_null(void);
+
+long object_arity(struct object* obj);
 
 #define OBJECT_STRING(val) ((struct object*)object_new_string(val))
 #define OBJECT_NUMBER(val) ((struct object*)object_new_number(val))
@@ -34,6 +39,7 @@ struct object* object_new_null(void);
 #define OBJECT_IS_STRING(obj) ((obj)->type == OBJECT_TYPE_STRING)
 #define OBJECT_IS_BOOL(obj) ((obj)->type == OBJECT_TYPE_BOOL)
 #define OBJECT_IS_NULL(obj) ((obj)->type == OBJECT_TYPE_NULL)
+#define OBJECT_IS_CALLABLE(obj) (false)
 
 #define OBJECT_AS_NUMBER(obj) (obj)->value.d
 #define OBJECT_AS_STRING(obj) (obj)->value.s

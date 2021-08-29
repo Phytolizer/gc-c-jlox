@@ -26,6 +26,8 @@ static struct expr* parse_comparison(struct parser* parser);
 static struct expr* parse_term(struct parser* parser);
 static struct expr* parse_factor(struct parser* parser);
 static struct expr* parse_unary(struct parser* parser);
+static struct expr* parse_call(struct parser* parser);
+static struct expr* finish_call(struct parser* parser, struct expr* callee);
 static struct expr* parse_primary(struct parser* parser);
 
 static struct token* parser_previous(struct parser* parser);
@@ -431,7 +433,58 @@ static struct expr* parse_unary(struct parser* parser)
     return (struct expr*)expr_new_unary(op, right);
   }
 
-  return parse_primary(parser);
+  return parse_call(parser);
+}
+
+static struct expr* parse_call(struct parser* parser)
+{
+  struct expr* expr = parse_primary(parser);
+  if (!expr) {
+    return NULL;
+  }
+
+  while (true) {
+    if (parser_match(parser, 1, TOKEN_LEFT_PAREN)) {
+      expr = finish_call(parser, expr);
+      if (!expr) {
+        return NULL;
+      }
+    } else {
+      break;
+    }
+  }
+
+  return expr;
+}
+
+#define MAX_ARGUMENTS 255
+
+static struct expr* finish_call(struct parser* parser, struct expr* callee)
+{
+  struct expr_list* arguments = GC_MALLOC(sizeof(struct expr_list));
+  LIST_INIT(arguments);
+  if (!parser_check(parser, TOKEN_RIGHT_PAREN)) {
+    while (true) {
+      if (arguments->length >= MAX_ARGUMENTS) {
+        error(parser_peek(parser), "Can't have more than 255 arguments.");
+      }
+      struct expr* expression = parse_expression(parser);
+      if (!expression) {
+        return NULL;
+      }
+      LIST_PUSH(arguments, expression);
+      if (!parser_match(parser, 1, TOKEN_COMMA)) {
+        break;
+      }
+    }
+  }
+
+  struct token* paren =
+      parser_consume(parser, TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+  if (!paren) {
+    return NULL;
+  }
+  return (struct expr*)expr_new_call(callee, *paren, arguments);
 }
 
 static struct expr* parse_primary(struct parser* parser)
