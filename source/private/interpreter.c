@@ -64,6 +64,8 @@ static struct interpret_result interpreter_visit_unary_expr(
 static struct interpret_result interpreter_visit_variable_expr(
     struct interpreter* interpreter, struct variable_expr* expr);
 
+static struct runtime_error* interpreter_visit_block_stmt(
+    struct interpreter* interpreter, struct block_stmt* stmt);
 static struct runtime_error* interpreter_visit_print_stmt(
     struct interpreter* interpreter, struct print_stmt* stmt);
 static struct runtime_error* interpreter_visit_expression_stmt(
@@ -73,6 +75,10 @@ static struct runtime_error* interpreter_visit_var_stmt(
 
 struct runtime_error* interpreter_execute(struct interpreter* interpreter,
                                           struct stmt* stmt);
+static struct runtime_error* interpreter_execute_block(
+    struct interpreter* interpreter,
+    struct stmt_list* statements,
+    struct environment* environment);
 
 EXPR_DEFINE_ACCEPT_FOR(struct interpret_result, interpreter);
 STMT_DEFINE_ACCEPT_FOR(struct runtime_error*, interpreter);
@@ -131,6 +137,7 @@ static bool is_equal(struct object* left, struct object* right)
           && fabs(OBJECT_AS_NUMBER(left) - OBJECT_AS_NUMBER(right))
           < NUMBER_DELTA;
   }
+  assert(false);
 }
 
 static struct runtime_error* check_number_operand(struct token* op,
@@ -292,6 +299,14 @@ static struct interpret_result interpreter_visit_variable_expr(
   return INTERPRET_ERROR(ENVIRONMENT_LOOKUP_RESULT_GET_ERROR(&result));
 }
 
+static struct runtime_error* interpreter_visit_block_stmt(
+    struct interpreter* interpreter, struct block_stmt* stmt)
+{
+  interpreter_execute_block(interpreter,
+                            stmt->statements,
+                            environment_new_enclosed(interpreter->environment));
+}
+
 static struct runtime_error* interpreter_visit_print_stmt(
     struct interpreter* interpreter, struct print_stmt* stmt)
 {
@@ -344,9 +359,9 @@ struct interpreter* interpreter_new(void)
 
 void interpret(struct interpreter* interpreter, struct stmt_list* statements)
 {
-  for (size_t i = 0; i < statements->length; ++i) {
+  for (long i = 0; i < statements->length; ++i) {
     struct runtime_error* result =
-        interpreter_execute(interpreter, statements->data[i]);
+        interpreter_execute(interpreter, statements->pointer[i]);
     if (result) {
       library_runtime_error(result);
       break;
@@ -358,4 +373,25 @@ struct runtime_error* interpreter_execute(struct interpreter* interpreter,
                                           struct stmt* stmt)
 {
   return stmt_accept_interpreter(stmt, interpreter);
+}
+
+static struct runtime_error* interpreter_execute_block(
+    struct interpreter* interpreter,
+    struct stmt_list* statements,
+    struct environment* environment)
+{
+  struct environment* previous = interpreter->environment;
+  interpreter->environment = environment;
+
+  for (long i = 0; i < statements->length; ++i) {
+    struct runtime_error* err =
+        interpreter_execute(interpreter, statements->pointer[i]);
+    if (err) {
+      interpreter->environment = previous;
+      return err;
+    }
+  }
+
+  interpreter->environment = previous;
+  return NULL;
 }

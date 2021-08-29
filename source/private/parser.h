@@ -2,7 +2,6 @@
 
 #include <private/ast/expr.h>
 #include <private/ast/stmt.h>
-#include <private/ast/stmt_list.h>
 #include <private/token.h>
 
 struct parser {

@@ -2,7 +2,6 @@
 
 #include <private/ast/expr.h>
 #include <private/ast/stmt.h>
-#include <private/ast/stmt_list.h>
 #include <private/environment.h>
 #include <private/object.h>
 #include <private/runtime_error.h>

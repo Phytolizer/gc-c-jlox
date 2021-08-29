@@ -25,6 +25,7 @@ add_library(
     source/lib.c
     source/private/interpreter.c
     source/private/environment.c
+    source/private/list.c
     source/private/object.c
     source/private/parser.c
     source/private/runtime_error.c
@@ -36,7 +37,6 @@ add_library(
     source/private/ast/expr.c
     source/private/ast/printer.c
     source/private/ast/stmt.c
-    source/private/ast/stmt_list.c
     source/private/hash/fnv.c
     source/private/hash/table.c
 )

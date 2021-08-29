@@ -10,6 +10,7 @@
 static struct stmt* parse_declaration(struct parser* parser);
 static struct stmt* parse_statement(struct parser* parser);
 static struct stmt* parse_print_statement(struct parser* parser);
+static struct stmt* parse_block(struct parser* parser);
 static struct stmt* parse_expression_statement(struct parser* parser);
 static struct stmt* parse_var_declaration(struct parser* parser);
 
@@ -48,7 +49,7 @@ struct stmt_list* parser_parse(struct parser* parser)
   while (!parser_is_at_end(parser)) {
     struct stmt* statement = parse_declaration(parser);
     if (statement) {
-      stmt_list_push(statements, statement);
+      LIST_PUSH(statements, statement);
     }
   }
 
@@ -77,6 +78,9 @@ static struct stmt* parse_statement(struct parser* parser)
   if (parser_match(parser, 1, TOKEN_PRINT)) {
     return parse_print_statement(parser);
   }
+  if (parser_match(parser, 1, TOKEN_LEFT_BRACE)) {
+    return parse_block(parser);
+  }
 
   return parse_expression_statement(parser);
 }
@@ -91,6 +95,25 @@ static struct stmt* parse_print_statement(struct parser* parser)
     return NULL;
   }
   return (struct stmt*)stmt_new_print(value);
+}
+
+static struct stmt* parse_block(struct parser* parser)
+{
+  struct stmt_list* statements = stmt_list_new();
+
+  while (!parser_check(parser, TOKEN_RIGHT_BRACE) && !parser_is_at_end(parser))
+  {
+    struct stmt* statement = parse_declaration(parser);
+    if (!statement) {
+      return NULL;
+    }
+    LIST_PUSH(statements, statement);
+  }
+
+  if (!parser_consume(parser, TOKEN_RIGHT_BRACE, "Expect '}' after block.")) {
+    return NULL;
+  }
+  return (struct stmt*)stmt_new_block(statements);
 }
 
 static struct stmt* parse_expression_statement(struct parser* parser)

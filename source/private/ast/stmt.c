@@ -1,6 +1,23 @@
 #include <gc.h>
 #include <private/ast/stmt.h>
 
+struct stmt_list* stmt_list_new(void)
+{
+  struct stmt_list* list = GC_MALLOC(sizeof(struct stmt_list));
+  list->pointer = NULL;
+  list->length = 0;
+  list->capacity = 0;
+  return list;
+}
+
+struct block_stmt* stmt_new_block(struct stmt_list* statements)
+{
+  struct block_stmt* stmt = GC_MALLOC(sizeof(struct block_stmt));
+  stmt->base.type = STMT_BLOCK;
+  stmt->statements = statements;
+  return stmt;
+}
+
 struct expression_stmt* stmt_new_expression(struct expr* expression)
 {
   struct expression_stmt* stmt = GC_MALLOC(sizeof(struct expression_stmt));
