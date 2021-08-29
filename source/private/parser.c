@@ -16,6 +16,7 @@ static struct stmt* parse_expression_statement(struct parser* parser);
 static struct stmt* parse_if_statement(struct parser* parser);
 static struct stmt* parse_for_statement(struct parser* parser);
 static struct stmt* parse_function(struct parser* parser, const char* kind);
+static struct stmt* parse_return_statement(struct parser* parser);
 static struct stmt* parse_var_declaration(struct parser* parser);
 static struct stmt* parse_while_statement(struct parser* parser);
 
@@ -97,6 +98,9 @@ static struct stmt* parse_statement(struct parser* parser)
   }
   if (parser_match(parser, 1, TOKEN_PRINT)) {
     return parse_print_statement(parser);
+  }
+  if (parser_match(parser, 1, TOKEN_RETURN)) {
+    return parse_return_statement(parser);
   }
   if (parser_match(parser, 1, TOKEN_WHILE)) {
     return parse_while_statement(parser);
@@ -303,6 +307,23 @@ static struct stmt* parse_function(struct parser* parser, const char* kind)
   }
   struct stmt_list* body = parse_block(parser);
   return (struct stmt*)stmt_new_function(*name, parameters, body);
+}
+
+static struct stmt* parse_return_statement(struct parser* parser)
+{
+  struct token* keyword = parser_previous(parser);
+  struct expr* value = NULL;
+  if (!parser_check(parser, TOKEN_SEMICOLON)) {
+    value = parse_expression(parser);
+    if (!value) {
+      return NULL;
+    }
+  }
+  if (!parser_consume(
+          parser, TOKEN_SEMICOLON, "Expect ';' after return value.")) {
+    return NULL;
+  }
+  return (struct stmt*)stmt_new_return(*keyword, value);
 }
 
 static struct stmt* parse_var_declaration(struct parser* parser)

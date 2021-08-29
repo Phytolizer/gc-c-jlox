@@ -58,6 +58,15 @@ struct print_stmt* stmt_new_print(struct expr* expression)
   return stmt;
 }
 
+struct return_stmt* stmt_new_return(struct token keyword, struct expr* value)
+{
+  struct return_stmt* stmt = GC_MALLOC(sizeof(struct return_stmt));
+  stmt->base.type = STMT_RETURN;
+  stmt->keyword = keyword;
+  stmt->value = value;
+  return stmt;
+}
+
 struct var_stmt* stmt_new_var(struct token name, struct expr* initializer)
 {
   struct var_stmt* stmt = GC_MALLOC(sizeof(struct var_stmt));

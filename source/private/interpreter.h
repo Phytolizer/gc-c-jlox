@@ -14,7 +14,7 @@ struct interpreter {
 };
 
 EXPR_DECLARE_ACCEPT_FOR(struct interpret_result, interpreter);
-STMT_DECLARE_ACCEPT_FOR(struct runtime_error*, interpreter);
+STMT_DECLARE_ACCEPT_FOR(struct execution_result, interpreter);
 
 struct interpreter* interpreter_new(void);
 void interpret(struct interpreter* interpreter, struct stmt_list* statements);

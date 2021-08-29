@@ -51,6 +51,39 @@ struct interpret_result {
 static struct interpret_result evaluate(struct interpreter* interpreter,
                                         struct expr* expression);
 
+enum execution_result_type
+{
+  EXECUTION_RESULT_TYPE_NONE,
+  EXECUTION_RESULT_TYPE_RUNTIME_ERROR,
+  EXECUTION_RESULT_TYPE_RETURN,
+};
+
+struct execution_result {
+  enum execution_result_type type;
+  union {
+    struct runtime_error* runtime_error;
+    struct object* return_value;
+  } u;
+};
+
+#define EXECUTION_RESULT_NONE \
+  (struct execution_result) \
+  { \
+    .type = EXECUTION_RESULT_TYPE_NONE \
+  }
+#define EXECUTION_RESULT_RUNTIME_ERROR(err) \
+  (struct execution_result) \
+  { \
+    .type = EXECUTION_RESULT_TYPE_RUNTIME_ERROR, \
+    .u = \
+    {.runtime_error = (err) } \
+  }
+#define EXECUTION_RESULT_RETURN(value) \
+  (struct execution_result) \
+  { \
+    .type = EXECUTION_RESULT_TYPE_RETURN, .u = {.return_value = (value) } \
+  }
+
 static const char* stringify(struct object* obj);
 
 static bool is_truthy(struct object* obj);
@@ -86,30 +119,32 @@ static struct interpret_result interpreter_call(struct interpreter* interpreter,
                                                 struct object* callee,
                                                 struct object_list* arguments);
 
-static struct runtime_error* interpreter_visit_block_stmt(
+static struct execution_result interpreter_visit_block_stmt(
     struct interpreter* interpreter, struct block_stmt* stmt);
-static struct runtime_error* interpreter_visit_expression_stmt(
+static struct execution_result interpreter_visit_expression_stmt(
     struct interpreter* interpreter, struct expression_stmt* stmt);
-static struct runtime_error* interpreter_visit_function_stmt(
+static struct execution_result interpreter_visit_function_stmt(
     struct interpreter* interpreter, struct function_stmt* stmt);
-static struct runtime_error* interpreter_visit_if_stmt(
+static struct execution_result interpreter_visit_if_stmt(
     struct interpreter* interpreter, struct if_stmt* stmt);
-static struct runtime_error* interpreter_visit_print_stmt(
+static struct execution_result interpreter_visit_print_stmt(
     struct interpreter* interpreter, struct print_stmt* stmt);
-static struct runtime_error* interpreter_visit_var_stmt(
+static struct execution_result interpreter_visit_return_stmt(
+    struct interpreter* interpreter, struct return_stmt* stmt);
+static struct execution_result interpreter_visit_var_stmt(
     struct interpreter* interpreter, struct var_stmt* stmt);
-static struct runtime_error* interpreter_visit_while_stmt(
+static struct execution_result interpreter_visit_while_stmt(
     struct interpreter* interpreter, struct while_stmt* stmt);
 
-struct runtime_error* interpreter_execute(struct interpreter* interpreter,
-                                          struct stmt* stmt);
-static struct runtime_error* interpreter_execute_block(
+struct execution_result interpreter_execute(struct interpreter* interpreter,
+                                            struct stmt* stmt);
+static struct execution_result interpreter_execute_block(
     struct interpreter* interpreter,
     struct stmt_list* statements,
     struct environment* environment);
 
 EXPR_DEFINE_ACCEPT_FOR(struct interpret_result, interpreter)
-STMT_DEFINE_ACCEPT_FOR(struct runtime_error*, interpreter)
+STMT_DEFINE_ACCEPT_FOR(struct execution_result, interpreter)
 
 static struct interpret_result evaluate(struct interpreter* interpreter,
                                         struct expr* expression)
@@ -185,6 +220,10 @@ static bool is_equal(struct object* left, struct object* right)
       return OBJECT_IS_NATIVE_FUNCTION(right)
           && OBJECT_AS_NATIVE_FUNCTION(left).func
           == OBJECT_AS_NATIVE_FUNCTION(right).func;
+    case OBJECT_TYPE_FUNCTION:
+      return OBJECT_IS_FUNCTION(right)
+          && OBJECT_AS_FUNCTION(left).declaration
+          == OBJECT_AS_FUNCTION(right).declaration;
   }
   assert(false);
 }
@@ -427,19 +466,23 @@ static struct interpret_result interpreter_call(struct interpreter* interpreter,
                            // arity was checked, so this is OK
                            arguments->pointer[i]);
       }
-      struct runtime_error* err = interpreter_execute_block(
+      struct execution_result result = interpreter_execute_block(
           interpreter, func.declaration->body, environment);
-      if (err) {
-        return INTERPRET_ERROR(err);
+      switch (result.type) {
+        case EXECUTION_RESULT_TYPE_RUNTIME_ERROR:
+          return INTERPRET_ERROR(result.u.runtime_error);
+        case EXECUTION_RESULT_TYPE_RETURN:
+          return INTERPRET_OK(result.u.return_value);
+        default:
+          return INTERPRET_OK(OBJECT_NULL());
       }
-      return INTERPRET_OK(OBJECT_NULL());
     }
     default:
       ASSERT_UNREACHABLE();
   }
 }
 
-static struct runtime_error* interpreter_visit_block_stmt(
+static struct execution_result interpreter_visit_block_stmt(
     struct interpreter* interpreter, struct block_stmt* stmt)
 {
   return interpreter_execute_block(
@@ -448,31 +491,44 @@ static struct runtime_error* interpreter_visit_block_stmt(
       environment_new_enclosed(interpreter->environment));
 }
 
-static struct runtime_error* interpreter_visit_print_stmt(
+static struct execution_result interpreter_visit_print_stmt(
     struct interpreter* interpreter, struct print_stmt* stmt)
 {
   struct print_stmt* print_stmt = (struct print_stmt*)stmt;
   struct interpret_result result =
       evaluate(interpreter, print_stmt->expression);
   if (result.type == INTERPRET_RESULT_ERROR) {
-    return result.u.err;
+    return EXECUTION_RESULT_RUNTIME_ERROR(result.u.err);
   }
   printf("%s\n", stringify(result.u.ok));
-  return NULL;
+  return EXECUTION_RESULT_NONE;
 }
-static struct runtime_error* interpreter_visit_expression_stmt(
+static struct execution_result interpreter_visit_return_stmt(
+    struct interpreter* interpreter, struct return_stmt* stmt)
+{
+  struct object* value = OBJECT_NULL();
+  if (stmt->value) {
+    struct interpret_result result = evaluate(interpreter, stmt->value);
+    if (result.type == INTERPRET_RESULT_ERROR) {
+      return EXECUTION_RESULT_RUNTIME_ERROR(result.u.err);
+    }
+    value = result.u.ok;
+  }
+  return EXECUTION_RESULT_RETURN(value);
+}
+static struct execution_result interpreter_visit_expression_stmt(
     struct interpreter* interpreter, struct expression_stmt* stmt)
 {
   struct expression_stmt* expression_stmt = (struct expression_stmt*)stmt;
   struct interpret_result result =
       evaluate(interpreter, expression_stmt->expression);
   if (result.type == INTERPRET_RESULT_ERROR) {
-    return result.u.err;
+    return EXECUTION_RESULT_RUNTIME_ERROR(result.u.err);
   }
-  return NULL;
+  return EXECUTION_RESULT_NONE;
 }
 
-static struct runtime_error* interpreter_visit_function_stmt(
+static struct execution_result interpreter_visit_function_stmt(
     struct interpreter* interpreter, struct function_stmt* stmt)
 {
   struct function_stmt* function_stmt = (struct function_stmt*)stmt;
@@ -480,15 +536,15 @@ static struct runtime_error* interpreter_visit_function_stmt(
       OBJECT_FUNCTION((struct function) {.declaration = function_stmt});
   environment_define(
       interpreter->environment, function_stmt->name.lexeme, function);
-  return NULL;
+  return EXECUTION_RESULT_NONE;
 }
 
-static struct runtime_error* interpreter_visit_if_stmt(
+static struct execution_result interpreter_visit_if_stmt(
     struct interpreter* interpreter, struct if_stmt* stmt)
 {
   struct interpret_result condition = evaluate(interpreter, stmt->condition);
   if (condition.type == INTERPRET_RESULT_ERROR) {
-    return condition.u.err;
+    return EXECUTION_RESULT_RUNTIME_ERROR(condition.u.err);
   }
   if (is_truthy(condition.u.ok)) {
     return interpreter_execute(interpreter, stmt->then_branch);
@@ -496,10 +552,10 @@ static struct runtime_error* interpreter_visit_if_stmt(
   if (stmt->else_branch != NULL) {
     return interpreter_execute(interpreter, stmt->else_branch);
   }
-  return NULL;
+  return EXECUTION_RESULT_NONE;
 }
 
-static struct runtime_error* interpreter_visit_var_stmt(
+static struct execution_result interpreter_visit_var_stmt(
     struct interpreter* interpreter, struct var_stmt* stmt)
 {
   struct object* value = OBJECT_NULL();
@@ -510,28 +566,28 @@ static struct runtime_error* interpreter_visit_var_stmt(
         value = result.u.ok;
         break;
       case INTERPRET_RESULT_ERROR:
-        return result.u.err;
+        return EXECUTION_RESULT_RUNTIME_ERROR(result.u.err);
     }
   }
 
   environment_define(interpreter->environment, stmt->name.lexeme, value);
-  return NULL;
+  return EXECUTION_RESULT_NONE;
 }
 
-static struct runtime_error* interpreter_visit_while_stmt(
+static struct execution_result interpreter_visit_while_stmt(
     struct interpreter* interpreter, struct while_stmt* stmt)
 {
   while (true) {
     struct interpret_result condition = evaluate(interpreter, stmt->condition);
     if (condition.type == INTERPRET_RESULT_ERROR) {
-      return condition.u.err;
+      return EXECUTION_RESULT_RUNTIME_ERROR(condition.u.err);
     }
     if (!is_truthy(condition.u.ok)) {
       break;
     }
     interpreter_execute(interpreter, stmt->body);
   }
-  return NULL;
+  return EXECUTION_RESULT_NONE;
 }
 
 struct interpreter* interpreter_new(void)
@@ -548,34 +604,37 @@ struct interpreter* interpreter_new(void)
 void interpret(struct interpreter* interpreter, struct stmt_list* statements)
 {
   for (long i = 0; i < statements->length; ++i) {
-    struct runtime_error* result =
+    struct execution_result result =
         interpreter_execute(interpreter, statements->pointer[i]);
-    if (result) {
-      library_runtime_error(result);
+    if (result.type == EXECUTION_RESULT_TYPE_RUNTIME_ERROR) {
+      library_runtime_error(result.u.runtime_error);
       break;
+    }
+    if (result.type == EXECUTION_RESULT_TYPE_RETURN) {
+      ASSERT_UNREACHABLE();
     }
   }
 }
 
-struct runtime_error* interpreter_execute(struct interpreter* interpreter,
-                                          struct stmt* stmt)
+struct execution_result interpreter_execute(struct interpreter* interpreter,
+                                            struct stmt* stmt)
 {
 #ifdef INTERPRETER_DEBUG
   printf("[INTP] Executing statement: ");
   stmt_debug(stmt);
   printf("\n");
 #endif
-  struct runtime_error* err = stmt_accept_interpreter(stmt, interpreter);
+  struct execution_result result = stmt_accept_interpreter(stmt, interpreter);
 #ifdef INTERPRETER_DEBUG
-  if (!err) {
+  if (result.type != EXECUTION_RESULT_TYPE_RUNTIME_ERROR) {
     printf("[INTP] Execution finished successfully\n");
   }
   interpreter_dump_environment(interpreter);
 #endif
-  return err;
+  return result;
 }
 
-static struct runtime_error* interpreter_execute_block(
+static struct execution_result interpreter_execute_block(
     struct interpreter* interpreter,
     struct stmt_list* statements,
     struct environment* environment)
@@ -584,14 +643,14 @@ static struct runtime_error* interpreter_execute_block(
   interpreter->environment = environment;
 
   for (long i = 0; i < statements->length; ++i) {
-    struct runtime_error* err =
+    struct execution_result result =
         interpreter_execute(interpreter, statements->pointer[i]);
-    if (err) {
+    if (result.type != EXECUTION_RESULT_TYPE_NONE) {
       interpreter->environment = previous;
-      return err;
+      return result;
     }
   }
 
   interpreter->environment = previous;
-  return NULL;
+  return EXECUTION_RESULT_NONE;
 }
