@@ -17,6 +17,8 @@ static struct stmt* parse_var_declaration(struct parser* parser);
 
 static struct expr* parse_expression(struct parser* parser);
 static struct expr* parse_assignment(struct parser* parser);
+static struct expr* parse_or(struct parser* parser);
+static struct expr* parse_and(struct parser* parser);
 static struct expr* parse_equality(struct parser* parser);
 static struct expr* parse_comparison(struct parser* parser);
 static struct expr* parse_term(struct parser* parser);
@@ -193,7 +195,7 @@ static struct expr* parse_expression(struct parser* parser)
 
 static struct expr* parse_assignment(struct parser* parser)
 {
-  struct expr* expr = parse_equality(parser);
+  struct expr* expr = parse_or(parser);
 
   if (parser_match(parser, 1, TOKEN_EQUAL)) {
     struct token* equals = parser_previous(parser);
@@ -205,6 +207,32 @@ static struct expr* parse_assignment(struct parser* parser)
     }
 
     error(equals, "Invalid assignment target.");
+  }
+
+  return expr;
+}
+
+static struct expr* parse_or(struct parser* parser)
+{
+  struct expr* expr = parse_and(parser);
+
+  while (parser_match(parser, 1, TOKEN_OR)) {
+    struct token* op = parser_previous(parser);
+    struct expr* right = parse_and(parser);
+    expr = (struct expr*)expr_new_logical(expr, *op, right);
+  }
+
+  return expr;
+}
+
+static struct expr* parse_and(struct parser* parser)
+{
+  struct expr* expr = parse_equality(parser);
+
+  while (parser_match(parser, 1, TOKEN_AND)) {
+    struct token* op = parser_previous(parser);
+    struct expr* right = parse_equality(parser);
+    expr = (struct expr*)expr_new_logical(expr, *op, right);
   }
 
   return expr;

@@ -9,6 +9,7 @@ enum expr_type
   EXPR_BINARY,
   EXPR_GROUPING,
   EXPR_LITERAL,
+  EXPR_LOGICAL,
   EXPR_UNARY,
   EXPR_VARIABLE,
 };
@@ -40,6 +41,13 @@ struct literal_expr {
   struct object* value;
 };
 
+struct logical_expr {
+  struct expr base;
+  struct expr* left;
+  struct token op;
+  struct expr* right;
+};
+
 struct unary_expr {
   struct expr base;
   struct token op;
@@ -57,6 +65,9 @@ struct binary_expr* expr_new_binary(struct expr* left,
                                     struct expr* right);
 struct grouping_expr* expr_new_grouping(struct expr* expression);
 struct literal_expr* expr_new_literal(struct object* value);
+struct logical_expr* expr_new_logical(struct expr* left,
+                                      struct token op,
+                                      struct expr* right);
 struct unary_expr* expr_new_unary(struct token op, struct expr* right);
 struct variable_expr* expr_new_variable(struct token name);
 
@@ -78,6 +89,9 @@ struct variable_expr* expr_new_variable(struct token name);
       case EXPR_LITERAL: \
         return visitor_type##_visit_literal_expr(v, \
                                                  (struct literal_expr*)expr); \
+      case EXPR_LOGICAL: \
+        return visitor_type##_visit_logical_expr(v, \
+                                                 (struct logical_expr*)expr); \
       case EXPR_UNARY: \
         return visitor_type##_visit_unary_expr(v, (struct unary_expr*)expr); \
       case EXPR_VARIABLE: \

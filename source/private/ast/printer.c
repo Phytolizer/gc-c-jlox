@@ -14,6 +14,8 @@ static char* ast_printer_visit_grouping_expr(struct ast_printer* printer,
                                              struct grouping_expr* expr);
 static char* ast_printer_visit_literal_expr(struct ast_printer* printer,
                                             struct literal_expr* expr);
+static char* ast_printer_visit_logical_expr(struct ast_printer* printer,
+                                            struct logical_expr* expr);
 static char* ast_printer_visit_unary_expr(struct ast_printer* printer,
                                           struct unary_expr* expr);
 static char* ast_printer_visit_variable_expr(struct ast_printer* printer,
@@ -57,6 +59,18 @@ static char* ast_printer_visit_literal_expr(struct ast_printer* printer,
   char* str = GC_MALLOC(len + 1);
   object_snprint(str, len + 1, expr->value);
   return str;
+}
+
+static char* ast_printer_visit_logical_expr(struct ast_printer* printer,
+                                            struct logical_expr* expr)
+{
+  char* left = expr_accept_ast_printer(expr->left, printer);
+  char* right = expr_accept_ast_printer(expr->right, printer);
+
+  if (expr->op.type == TOKEN_OR) {
+    return alloc_printf("(or %s %s)", left, right);
+  }
+  return alloc_printf("(and %s %s)", left, right);
 }
 
 static char* ast_printer_visit_unary_expr(struct ast_printer* printer,

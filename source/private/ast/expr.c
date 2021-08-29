@@ -40,6 +40,18 @@ struct literal_expr* expr_new_literal(struct object* value)
   return expr;
 }
 
+struct logical_expr* expr_new_logical(struct expr* left,
+                                      struct token op,
+                                      struct expr* right)
+{
+  struct logical_expr* expr = GC_MALLOC(sizeof(struct logical_expr));
+  expr->base.type = EXPR_LOGICAL;
+  expr->left = left;
+  expr->op = op;
+  expr->right = right;
+  return expr;
+}
+
 struct unary_expr* expr_new_unary(struct token op, struct expr* right)
 {
   struct unary_expr* expr = GC_MALLOC(sizeof(struct unary_expr));

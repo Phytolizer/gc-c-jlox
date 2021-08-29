@@ -59,6 +59,8 @@ static struct interpret_result interpreter_visit_grouping_expr(
     struct interpreter* interpreter, struct grouping_expr* expr);
 static struct interpret_result interpreter_visit_literal_expr(
     struct interpreter* interpreter, struct literal_expr* expr);
+static struct interpret_result interpreter_visit_logical_expr(
+    struct interpreter* interpreter, struct logical_expr* expr);
 static struct interpret_result interpreter_visit_unary_expr(
     struct interpreter* interpreter, struct unary_expr* expr);
 static struct interpret_result interpreter_visit_variable_expr(
@@ -265,6 +267,26 @@ static struct interpret_result interpreter_visit_literal_expr(
 {
   (void)interpreter;
   return INTERPRET_OK(expr->value);
+}
+
+static struct interpret_result interpreter_visit_logical_expr(
+    struct interpreter* interpreter, struct logical_expr* expr)
+{
+  struct interpret_result left = evaluate(interpreter, expr->left);
+  if (left.type == INTERPRET_RESULT_ERROR) {
+    return left;
+  }
+  if (expr->op.type == TOKEN_OR) {
+    if (is_truthy(left.u.ok)) {
+      return left;
+    }
+  } else {
+    if (!is_truthy(left.u.ok)) {
+      return left;
+    }
+  }
+
+  return evaluate(interpreter, expr->right);
 }
 
 static struct interpret_result interpreter_visit_unary_expr(
