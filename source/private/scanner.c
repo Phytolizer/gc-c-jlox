@@ -47,19 +47,19 @@ struct token_list* scanner_scan_tokens(struct scanner* self)
     scanner_scan_token(self);
   }
 
-  token_list_push(self->tokens,
-                  (struct token) {
-                      .type = TOKEN_EOF,
-                      .lexeme = "",
-                      .literal = object_new_null(),
-                      .line = self->line,
-                  });
+  LIST_PUSH(self->tokens,
+            ((struct token) {
+                .type = TOKEN_EOF,
+                .lexeme = "",
+                .literal = object_new_null(),
+                .line = self->line,
+            }));
   return self->tokens;
 }
 
 static bool scanner_is_at_end(struct scanner* self)
 {
-  return self->current >= self->source_end - self->source_begin;
+  return self->current >= (size_t)(self->source_end - self->source_begin);
 }
 
 static void scanner_scan_token(struct scanner* self)
@@ -162,13 +162,13 @@ static void scanner_add_token(struct scanner* self,
 {
   char* text = GC_MALLOC(self->current - self->start + 1);
   strncpy(text, self->source_begin + self->start, self->current - self->start);
-  token_list_push(self->tokens,
-                  (struct token) {
-                      .type = type,
-                      .lexeme = text,
-                      .literal = value,
-                      .line = self->line,
-                  });
+  LIST_PUSH(self->tokens,
+            ((struct token) {
+                .type = type,
+                .lexeme = text,
+                .literal = value,
+                .line = self->line,
+            }));
 }
 
 static bool scanner_match(struct scanner* self, char expected)
@@ -193,7 +193,7 @@ static char scanner_peek(struct scanner* self)
 
 static char scanner_peek_next(struct scanner* self)
 {
-  if (self->current + 1 >= self->source_end - self->source_begin) {
+  if (self->current + 1 >= (size_t)(self->source_end - self->source_begin)) {
     return '\0';
   }
   return self->source_begin[self->current + 1];

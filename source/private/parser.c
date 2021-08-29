@@ -519,7 +519,7 @@ static struct expr* parse_primary(struct parser* parser)
 
 static struct token* parser_previous(struct parser* parser)
 {
-  return &parser->tokens->data[parser->current - 1];
+  return &parser->tokens->pointer[parser->current - 1];
 }
 
 static bool parser_match(struct parser* parser, size_t n, ...)
@@ -559,7 +559,7 @@ static bool parser_is_at_end(struct parser* parser)
 
 static struct token* parser_peek(struct parser* parser)
 {
-  return &parser->tokens->data[parser->current];
+  return &parser->tokens->pointer[parser->current];
 }
 
 static struct token* parser_consume(struct parser* parser,

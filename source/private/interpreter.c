@@ -61,7 +61,9 @@ static struct runtime_error* check_number_operands(struct token* op,
                                                    struct object* left,
                                                    struct object* right);
 
+#ifdef INTERPRETER_DEBUG
 static void interpreter_dump_environment(struct interpreter* interpreter);
+#endif
 
 static struct interpret_result interpreter_visit_assign_expr(
     struct interpreter* interpreter, struct assign_expr* expr);
@@ -104,8 +106,8 @@ static struct runtime_error* interpreter_execute_block(
     struct stmt_list* statements,
     struct environment* environment);
 
-EXPR_DEFINE_ACCEPT_FOR(struct interpret_result, interpreter);
-STMT_DEFINE_ACCEPT_FOR(struct runtime_error*, interpreter);
+EXPR_DEFINE_ACCEPT_FOR(struct interpret_result, interpreter)
+STMT_DEFINE_ACCEPT_FOR(struct runtime_error*, interpreter)
 
 static struct interpret_result evaluate(struct interpreter* interpreter,
                                         struct expr* expression)
@@ -138,6 +140,8 @@ static const char* stringify(struct object* obj)
       return alloc_printf("%s", OBJECT_AS_BOOL(obj) ? "true" : "false");
     case OBJECT_TYPE_NULL:
       return "nil";
+    case OBJECT_TYPE_NATIVE_FUNCTION:
+      return "<native fn>";
   }
   assert(false && "impossible object type");
 }
@@ -175,6 +179,10 @@ static bool is_equal(struct object* left, struct object* right)
       return OBJECT_IS_NUMBER(right)
           && fabs(OBJECT_AS_NUMBER(left) - OBJECT_AS_NUMBER(right))
           < NUMBER_DELTA;
+    case OBJECT_TYPE_NATIVE_FUNCTION:
+      return OBJECT_IS_NATIVE_FUNCTION(right)
+          && OBJECT_AS_NATIVE_FUNCTION(left).func
+          == OBJECT_AS_NATIVE_FUNCTION(right).func;
   }
   assert(false);
 }
@@ -198,10 +206,12 @@ static struct runtime_error* check_number_operands(struct token* op,
   return runtime_error_new(op, "Operands must be numbers.");
 }
 
+#ifdef INTERPRETER_DEBUG
 static void interpreter_dump_environment(struct interpreter* interpreter)
 {
   environment_dump(interpreter->environment);
 }
+#endif
 
 static struct interpret_result interpreter_visit_assign_expr(
     struct interpreter* interpreter, struct assign_expr* expr)

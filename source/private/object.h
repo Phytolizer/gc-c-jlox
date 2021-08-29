@@ -39,7 +39,8 @@ struct object* object_new_number(double value);
 struct object* object_new_bool(bool value);
 struct object* object_new_null(void);
 struct object* object_new_native_function(
-    long arity, struct object* (*value)(struct interpreter*, struct object_list*));
+    long arity,
+    struct object* (*value)(struct interpreter*, struct object_list*));
 
 long object_arity(struct object* obj);
 
@@ -54,7 +55,9 @@ long object_arity(struct object* obj);
 #define OBJECT_IS_STRING(obj) ((obj)->type == OBJECT_TYPE_STRING)
 #define OBJECT_IS_BOOL(obj) ((obj)->type == OBJECT_TYPE_BOOL)
 #define OBJECT_IS_NULL(obj) ((obj)->type == OBJECT_TYPE_NULL)
-#define OBJECT_IS_CALLABLE(obj) ((obj)->type == OBJECT_TYPE_NATIVE_FUNCTION)
+#define OBJECT_IS_NATIVE_FUNCTION(obj) \
+  ((obj)->type == OBJECT_TYPE_NATIVE_FUNCTION)
+#define OBJECT_IS_CALLABLE(obj) (OBJECT_IS_NATIVE_FUNCTION(obj))
 
 #define OBJECT_AS_NUMBER(obj) (obj)->value.d
 #define OBJECT_AS_STRING(obj) (obj)->value.s

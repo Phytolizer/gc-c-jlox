@@ -33,6 +33,13 @@ struct expression_stmt {
   struct expr* expression;
 };
 
+struct function_stmt {
+  struct stmt base;
+  struct token name;
+  struct token_list* params;
+  struct stmt_list* body;
+};
+
 struct if_stmt {
   struct stmt base;
   struct expr* condition;

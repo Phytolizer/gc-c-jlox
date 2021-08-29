@@ -9,7 +9,8 @@ Checks: "-*,\
   misc-*,\
   portability-*,\
   openmp-*,\
-  readability-*"
+  readability-*,\
+  -bugprone-sizeof-expression"
 WarningsAsErrors: ''
 CheckOptions:
   - key: 'bugprone-argument-comment.StrictMode'
