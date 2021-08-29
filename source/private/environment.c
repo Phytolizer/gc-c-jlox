@@ -9,6 +9,15 @@
 struct environment* environment_new(void)
 {
   struct environment* environment = GC_MALLOC(sizeof(struct environment));
+  environment->enclosing = NULL;
+  environment->values = hash_table_new(hash_fnv1a);
+  return environment;
+}
+
+struct environment* environment_new_enclosed(struct environment* enclosing)
+{
+  struct environment* environment = GC_MALLOC(sizeof(struct environment));
+  environment->enclosing = enclosing;
   environment->values = hash_table_new(hash_fnv1a);
   return environment;
 }
@@ -29,6 +38,10 @@ struct environment_lookup_result environment_get(
     return ENVIRONMENT_LOOKUP_OK(*result);
   }
 
+  if (environment->enclosing != NULL) {
+    return environment_get(environment->enclosing, name);
+  }
+
   return ENVIRONMENT_LOOKUP_ERROR(runtime_error_new(
       name, alloc_printf("Undefined variable '%s'.", name->lexeme)));
 }
@@ -42,6 +55,10 @@ struct runtime_error* environment_assign(struct environment* environment,
   if (loc) {
     *loc = value;
     return NULL;
+  }
+
+  if (environment->enclosing != NULL) {
+    return environment_assign(environment->enclosing, name, value);
   }
 
   return runtime_error_new(

@@ -6,6 +6,7 @@
 #include <private/token.h>
 
 struct environment {
+  struct environment* enclosing;
   struct hash_table* values;
 };
 
@@ -43,6 +44,7 @@ struct environment_lookup_result {
 #define ENVIRONMENT_LOOKUP_RESULT_GET_ERROR(res) ((res)->u.e)
 
 struct environment* environment_new(void);
+struct environment* environment_new_enclosed(struct environment* enclosing);
 void environment_define(struct environment* environment,
                         const char* name,
                         struct object* value);
