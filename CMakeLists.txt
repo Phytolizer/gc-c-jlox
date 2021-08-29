@@ -6,7 +6,7 @@ project(
     gc-c-jlox
     VERSION 0.1.0
     DESCRIPTION "JLox in C"
-    HOMEPAGE_URL "https://github.com/Phytolizer"
+    HOMEPAGE_URL "https://github.com/Phytolizer/gc-c-jlox"
     LANGUAGES C
 )
 
