@@ -53,6 +53,30 @@ void expr_debug(struct expr* expr)
       printf("}");
       break;
     }
+    case EXPR_CALL: {
+      struct call_expr* call = (struct call_expr*)expr;
+      printf("CALL_EXPR {\n");
+      ++AstDebugIndentLevel;
+      ast_debug_print_indent();
+      printf(".callee = ");
+      expr_debug(call->callee);
+      printf(",\n");
+      ast_debug_print_indent();
+      printf(".arguments = [\n");
+      ++AstDebugIndentLevel;
+      for (long i = 0; i < call->arguments->length; ++i) {
+        ast_debug_print_indent();
+        expr_debug(call->arguments->pointer[i]);
+        printf(",\n");
+      }
+      --AstDebugIndentLevel;
+      ast_debug_print_indent();
+      printf("],\n");
+      --AstDebugIndentLevel;
+      ast_debug_print_indent();
+      printf("}");
+      break;
+    }
     case EXPR_GROUPING: {
       struct grouping_expr* grouping = (struct grouping_expr*)expr;
       printf("GROUPING_EXPR {\n");

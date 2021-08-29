@@ -7,6 +7,7 @@
 #include <private/runtime_error.h>
 
 struct interpreter {
+  struct environment* globals;
   struct environment* environment;
 };
 

@@ -9,12 +9,18 @@
 #include <private/strutils.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
 
 #include "private/environment.h"
 
 #define NUMBER_DELTA 0.000001
 
 // #define INTERPRETER_DEBUG
+
+static struct object* lox_clock(struct object_list* parameters)
+{
+  return OBJECT_NUMBER(clock() / CLOCKS_PER_SEC);
+}
 
 enum interpret_result_type
 {
@@ -394,6 +400,13 @@ static struct interpret_result interpreter_call(struct interpreter* interpreter,
                                                 struct object* callee,
                                                 struct object_list* arguments)
 {
+  switch (callee->type) {
+    case OBJECT_TYPE_NATIVE_FUNCTION: {
+      return INTERPRET_OK(OBJECT_AS_NATIVE_FUNCTION(callee).func(arguments));
+    }
+    default:
+      ASSERT_UNREACHABLE();
+  }
 }
 
 static struct runtime_error* interpreter_visit_block_stmt(
@@ -483,7 +496,10 @@ static struct runtime_error* interpreter_visit_while_stmt(
 struct interpreter* interpreter_new(void)
 {
   struct interpreter* interpreter = GC_MALLOC(sizeof(struct interpreter));
-  interpreter->environment = environment_new();
+  interpreter->globals = environment_new();
+  interpreter->environment = interpreter->globals;
+  environment_define(
+      interpreter->globals, "clock", OBJECT_NATIVE_FUNCTION(0, lox_clock));
   return interpreter;
 }
 

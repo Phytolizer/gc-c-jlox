@@ -1,4 +1,5 @@
 #include <gc.h>
+#include <private/assertions.h>
 #include <private/object.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -15,6 +16,8 @@
             (p), (n), "%s", OBJECT_AS_BOOL(obj) ? "true" : "false"); \
       case OBJECT_TYPE_NULL: \
         return prefix##nprintf((p), (n), "NULL"); \
+      case OBJECT_TYPE_NATIVE_FUNCTION: \
+        return prefix##nprintf((p), (n), "<native function>"); \
     } \
   } while (false)
 
@@ -73,9 +76,24 @@ struct object* object_new_null(void)
   return obj;
 }
 
+struct object* object_new_native_function(
+    long arity, struct object* (*value)(struct object_list*))
+{
+  struct object* obj = GC_MALLOC(sizeof(struct object));
+  obj->type = OBJECT_TYPE_NATIVE_FUNCTION;
+  obj->value.nf.func = value;
+  obj->value.nf.arity = arity;
+  return obj;
+}
+
 long object_arity(struct object* obj)
 {
-  return 0;
+  switch (obj->type) {
+    case OBJECT_TYPE_NATIVE_FUNCTION:
+      return OBJECT_AS_NATIVE_FUNCTION(obj).arity;
+    default:
+      ASSERT_UNREACHABLE();
+  }
 }
 
 size_t object_print(const struct object* obj)
@@ -90,7 +108,8 @@ size_t object_fprint(FILE* f, const struct object* obj)
 
 size_t object_snprint(char* s, size_t n, const struct object* obj)
 {
-  return object_print_to_string((struct my_printer*)string_printer_new(s, n), obj);
+  return object_print_to_string((struct my_printer*)string_printer_new(s, n),
+                                obj);
 }
 
 static struct my_file_printer* file_printer_new(FILE* fp)
