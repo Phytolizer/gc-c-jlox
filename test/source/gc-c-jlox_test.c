@@ -1,6 +1,7 @@
 #include <lib.h>
 #include <private/ast/expr.h>
 #include <private/ast/printer.h>
+#include <private/object.h>
 #include <string.h>
 
 static int test_ast_printer(void);

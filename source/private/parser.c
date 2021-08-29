@@ -14,6 +14,7 @@ static struct stmt* parse_expression_statement(struct parser* parser);
 static struct stmt* parse_var_declaration(struct parser* parser);
 
 static struct expr* parse_expression(struct parser* parser);
+static struct expr* parse_assignment(struct parser* parser);
 static struct expr* parse_equality(struct parser* parser);
 static struct expr* parse_comparison(struct parser* parser);
 static struct expr* parse_term(struct parser* parser);
@@ -130,7 +131,26 @@ static struct stmt* parse_var_declaration(struct parser* parser)
 
 static struct expr* parse_expression(struct parser* parser)
 {
-  return parse_equality(parser);
+  return parse_assignment(parser);
+}
+
+static struct expr* parse_assignment(struct parser* parser)
+{
+  struct expr* expr = parse_equality(parser);
+
+  if (parser_match(parser, 1, TOKEN_EQUAL)) {
+    struct token* equals = parser_previous(parser);
+    struct expr* value = parse_assignment(parser);
+
+    if (expr->type == EXPR_VARIABLE) {
+      struct token name = ((struct variable_expr*)expr)->name;
+      return (struct expr*)expr_new_assign(name, value);
+    }
+
+    error(equals, "Invalid assignment target.");
+  }
+
+  return expr;
 }
 
 static struct expr* parse_equality(struct parser* parser)

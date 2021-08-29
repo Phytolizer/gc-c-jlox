@@ -48,3 +48,6 @@ void environment_define(struct environment* environment,
                         struct object* value);
 struct environment_lookup_result environment_get(
     struct environment* environment, struct token* name);
+struct runtime_error* environment_assign(struct environment* environment,
+                                         struct token* name,
+                                         struct object* value);

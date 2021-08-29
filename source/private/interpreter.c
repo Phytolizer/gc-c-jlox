@@ -51,6 +51,8 @@ static struct runtime_error* check_number_operands(struct token* op,
                                                    struct object* left,
                                                    struct object* right);
 
+static struct interpret_result interpreter_visit_assign_expr(
+    struct interpreter* interpreter, struct assign_expr* expr);
 static struct interpret_result interpreter_visit_binary_expr(
     struct interpreter* interpreter, struct binary_expr* expr);
 static struct interpret_result interpreter_visit_grouping_expr(
@@ -148,6 +150,21 @@ static struct runtime_error* check_number_operands(struct token* op,
     return NULL;
   }
   return runtime_error_new(op, "Operands must be numbers.");
+}
+
+static struct interpret_result interpreter_visit_assign_expr(
+    struct interpreter* interpreter, struct assign_expr* expr)
+{
+  struct interpret_result value = evaluate(interpreter, expr->value);
+  if (value.type == INTERPRET_RESULT_ERROR) {
+    return value;
+  }
+  struct runtime_error* err =
+      environment_assign(interpreter->environment, &expr->name, value.u.ok);
+  if (err) {
+    return INTERPRET_ERROR(err);
+  }
+  return INTERPRET_OK(value.u.ok);
 }
 
 static struct interpret_result interpreter_visit_binary_expr(

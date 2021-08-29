@@ -6,6 +6,8 @@
 
 #define TOKEN_PREFIX_LEN 8
 
+static char* ast_printer_visit_assign_expr(struct ast_printer* printer,
+                                           struct assign_expr* expr);
 static char* ast_printer_visit_binary_expr(struct ast_printer* printer,
                                            struct binary_expr* expr);
 static char* ast_printer_visit_grouping_expr(struct ast_printer* printer,
@@ -21,6 +23,13 @@ void print_ast(struct expr* expr)
 {
   struct ast_printer printer;
   printf("%s\n", expr_accept_ast_printer(expr, &printer));
+}
+
+static char* ast_printer_visit_assign_expr(struct ast_printer* printer,
+                                           struct assign_expr* expr)
+{
+  char* value = expr_accept_ast_printer(expr->value, printer);
+  return alloc_printf("(set %s %s)", expr->name.lexeme, value);
 }
 
 static char* ast_printer_visit_binary_expr(struct ast_printer* printer,

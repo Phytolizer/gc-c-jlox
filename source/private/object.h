@@ -25,6 +25,11 @@ struct object* object_new_number(double value);
 struct object* object_new_bool(bool value);
 struct object* object_new_null(void);
 
+#define OBJECT_STRING(val) ((struct object*)object_new_string(val))
+#define OBJECT_NUMBER(val) ((struct object*)object_new_number(val))
+#define OBJECT_BOOL(val) ((struct object*)object_new_bool(val))
+#define OBJECT_NULL() ((struct object*)object_new_null())
+
 #define OBJECT_IS_NUMBER(obj) ((obj)->type == OBJECT_TYPE_NUMBER)
 #define OBJECT_IS_STRING(obj) ((obj)->type == OBJECT_TYPE_STRING)
 #define OBJECT_IS_BOOL(obj) ((obj)->type == OBJECT_TYPE_BOOL)

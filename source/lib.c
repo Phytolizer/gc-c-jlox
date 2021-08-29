@@ -50,6 +50,7 @@ int library_run_file(const char* filename)
     assert(errno != EINVAL);
     assert(errno != ESPIPE);
     fclose(fp);
+    return EX_OSERR;
   }
 
   rewind(fp);

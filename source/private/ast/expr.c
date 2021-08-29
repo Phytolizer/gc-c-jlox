@@ -3,6 +3,15 @@
 
 #include "private/token.h"
 
+struct assign_expr* expr_new_assign(struct token name, struct expr* value)
+{
+  struct assign_expr* expr = GC_MALLOC(sizeof(struct assign_expr));
+  expr->base.type = EXPR_ASSIGN;
+  expr->name = name;
+  expr->value = value;
+  return expr;
+}
+
 struct binary_expr* expr_new_binary(struct expr* left,
                                     struct token op,
                                     struct expr* right)

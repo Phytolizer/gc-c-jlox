@@ -1,9 +1,11 @@
 #pragma once
 
+#include <assert.h>
 #include <private/token.h>
 
 enum expr_type
 {
+  EXPR_ASSIGN,
   EXPR_BINARY,
   EXPR_GROUPING,
   EXPR_LITERAL,
@@ -13,6 +15,12 @@ enum expr_type
 
 struct expr {
   enum expr_type type;
+};
+
+struct assign_expr {
+  struct expr base;
+  struct token name;
+  struct expr* value;
 };
 
 struct binary_expr {
@@ -43,6 +51,7 @@ struct variable_expr {
   struct token name;
 };
 
+struct assign_expr* expr_new_assign(struct token name, struct expr* value);
 struct binary_expr* expr_new_binary(struct expr* left,
                                     struct token op,
                                     struct expr* right);
@@ -59,6 +68,8 @@ struct variable_expr* expr_new_variable(struct token name);
   EXPR_DECLARE_ACCEPT_FOR(result_type, visitor_type) \
   { \
     switch (expr->type) { \
+      case EXPR_ASSIGN: \
+        return visitor_type##_visit_assign_expr(v, (struct assign_expr*)expr); \
       case EXPR_BINARY: \
         return visitor_type##_visit_binary_expr(v, (struct binary_expr*)expr); \
       case EXPR_GROUPING: \
@@ -73,4 +84,5 @@ struct variable_expr* expr_new_variable(struct token name);
         return visitor_type##_visit_variable_expr( \
             v, (struct variable_expr*)expr); \
     } \
+    assert(false && "Entered unreachable code"); \
   }

@@ -32,3 +32,18 @@ struct environment_lookup_result environment_get(
   return ENVIRONMENT_LOOKUP_ERROR(runtime_error_new(
       name, alloc_printf("Undefined variable '%s'.", name->lexeme)));
 }
+
+struct runtime_error* environment_assign(struct environment* environment,
+                                         struct token* name,
+                                         struct object* value)
+{
+  struct object** loc = (struct object**)hash_table_try_get(
+      environment->values, name->lexeme, strlen(name->lexeme));
+  if (loc) {
+    *loc = value;
+    return NULL;
+  }
+
+  return runtime_error_new(
+      name, alloc_printf("Undefined variable '%s'.", name->lexeme));
+}
