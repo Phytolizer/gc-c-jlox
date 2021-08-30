@@ -459,7 +459,7 @@ static struct interpret_result interpreter_call(struct interpreter* interpreter,
     case OBJECT_TYPE_FUNCTION: {
       struct function func = OBJECT_AS_FUNCTION(callee);
       struct environment* environment =
-          environment_new_enclosed(interpreter->globals);
+          environment_new_enclosed(func.closure);
       for (long i = 0; i < func.declaration->params->length; ++i) {
         environment_define(environment,
                            func.declaration->params->pointer[i].lexeme,
@@ -532,8 +532,10 @@ static struct execution_result interpreter_visit_function_stmt(
     struct interpreter* interpreter, struct function_stmt* stmt)
 {
   struct function_stmt* function_stmt = (struct function_stmt*)stmt;
-  struct object* function =
-      OBJECT_FUNCTION((struct function) {.declaration = function_stmt});
+  struct object* function = OBJECT_FUNCTION(((struct function) {
+      .declaration = function_stmt,
+      .closure = interpreter->environment,
+  }));
   environment_define(
       interpreter->environment, function_stmt->name.lexeme, function);
   return EXECUTION_RESULT_NONE;

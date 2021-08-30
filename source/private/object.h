@@ -25,6 +25,7 @@ struct native_function {
 
 struct function {
   struct function_stmt* declaration;
+  struct environment* closure;
 };
 
 struct object {
